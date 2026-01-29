@@ -3,6 +3,20 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# Accept build arguments for environment variables
+ARG VITE_BACKEND_URL=http://localhost:3000
+ARG VITE_WEBSOCKET_URL=http://localhost:3000
+ARG VITE_API_URL=http://localhost:3000/api/v1
+ARG VITE_APP_NAME=LearnMind
+ARG VITE_APP_VERSION=2.1.0
+
+# Set environment variables for build
+ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
+ENV VITE_WEBSOCKET_URL=$VITE_WEBSOCKET_URL
+ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_APP_NAME=$VITE_APP_NAME
+ENV VITE_APP_VERSION=$VITE_APP_VERSION
+
 # Copy package files
 COPY package*.json ./
 
@@ -30,5 +44,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 EXPOSE 80
 
-CMD ["nginx", "-g", "daemon off;"]# Start nginx
 CMD ["nginx", "-g", "daemon off;"]
