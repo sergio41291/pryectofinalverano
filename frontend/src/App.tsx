@@ -1,24 +1,41 @@
 import { useState } from 'react';
-import { User, Mail, Lock, ArrowRight, BookOpen } from 'lucide-react'; // Iconos bonitos
+import { User, Mail, Lock, ArrowRight, BookOpen } from 'lucide-react';
 import { Home } from './pages/Home';
+import { useAuth } from './context/AuthContext';
 
 function App() {
-  // Este es el "cerebro" de la pantalla: recuerda si estamos en Login o Registro
   const [isLogin, setIsLogin] = useState(true);
-  
-  // NUEVO: Estado para controlar si el usuario entró
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
 
-  // NUEVO: Función para manejar el clic en ingresar
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAuthenticated(true);
-  };
+  const { isAuthenticated, login, register, isLoading } = useAuth();
 
   // SI EL USUARIO ESTÁ AUTENTICADO, MUESTRA EL HOME
   if (isAuthenticated) {
     return <Home />;
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setLocalError(null);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+      } else {
+        await register(name, email, password);
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error en la operación';
+      setLocalError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen p-4 font-sans bg-slate-50">
@@ -67,16 +84,25 @@ function App() {
             </p>
 
             {/* Formulario con onSubmit conectado */}
-            <form className="space-y-5" onSubmit={handleLogin}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               
+              {localError && (
+                <div className="p-3 text-sm text-red-700 bg-red-100 rounded-lg">
+                  {localError}
+                </div>
+              )}
+
               {!isLogin && (
                 <div className="group">
                   <label className="block mb-1 text-sm font-medium text-gray-700">Nombre Completo</label>
                   <div className="relative">
                     <User className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
                     <input 
-                      type="text" 
-                      placeholder="Ej. Juan Pérez" 
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="Ej. Juan Pérez"
+                      required={!isLogin}
                       className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
                     />
                   </div>
@@ -87,9 +113,12 @@ function App() {
                 <label className="block mb-1 text-sm font-medium text-gray-700">Correo Electrónico</label>
                 <div className="relative">
                   <Mail className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
-                  <input 
-                    type="email" 
-                    placeholder="estudiante@ejemplo.com" 
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="estudiante@ejemplo.com"
+                    required
                     className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
                   />
                 </div>
@@ -99,18 +128,34 @@ function App() {
                 <label className="block mb-1 text-sm font-medium text-gray-700">Contraseña</label>
                 <div className="relative">
                   <Lock className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
                     className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
                   />
                 </div>
               </div>
 
-              {/* Botón Principal ahora con type="submit" */}
-              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 group">
-                {isLogin ? "Ingresar a la Plataforma" : "Registrarse Gratis"}
-                <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+              {/* Botón Principal con estado de carga */}
+              <button
+                type="submit"
+                disabled={isSubmitting || isLoading}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3.5 rounded-xl shadow-lg shadow-blue-500/30 transition-all flex items-center justify-center gap-2 group"
+              >
+                {isSubmitting || isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Procesando...
+                  </>
+                ) : (
+                  <>
+                    {isLogin ? "Ingresar a la Plataforma" : "Registrarse Gratis"}
+                    <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
+                  </>
+                )}
               </button>
 
               <div className="relative py-4">
