@@ -1,5 +1,3 @@
-version: '3.9'
-
 services:
   # PostgreSQL - Base de datos principal
   postgres:
@@ -26,7 +24,7 @@ services:
 
   # MongoDB - Base de datos NoSQL (para documentos procesados)
   mongodb:
-    image: mongo:7.0-alpine
+    image: mongo:7.0
     container_name: learpmind_mongodb
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
