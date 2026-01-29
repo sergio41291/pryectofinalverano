@@ -15,21 +15,20 @@ from PIL import Image
 class PaddleOCRService:
     """Servicio OCR usando PaddleOCR 3.4.0 con API oficial"""
 
-    def __init__(self, lang: str = "en"):
+    def __init__(self, lang: str = "es"):
         """
         Inicializar PaddleOCR
         
         Args:
-            lang: Código de idioma (ej: 'en' para inglés - recomendado)
-                  'es' también soportado pero puede tener problemas en Windows
+            lang: Código de idioma (ej: 'es' para español por defecto)
+                  Otros idiomas soportados: 'en' (inglés), 'fr' (francés), etc.
+                  Ver: https://github.com/PaddlePaddle/PaddleOCR/blob/release/3.x/README.md
         """
         self.lang = lang
-        # Usar inglés como idioma default (más estable en Windows)
         # Configuración mínima validada en PaddleOCR 3.4.0
         try:
-            ocr_lang = lang if lang != 'es' else 'en'
-            print(f"Inicializando OCR con idioma: {ocr_lang}")
-            self.ocr = PaddleOCR(lang=ocr_lang)
+            print(f"Inicializando OCR con idioma: {lang}")
+            self.ocr = PaddleOCR(lang=lang)
         except Exception as e:
             print(f"Error inicializando OCR: {e}")
             raise
@@ -132,17 +131,20 @@ class PaddleOCRService:
 def main():
     """Función principal para uso desde línea de comandos"""
     if len(sys.argv) < 3:
-        print("Uso: python paddle_ocr_service.py <imagen> <output.json>")
-        print("Ejemplo: python paddle_ocr_service.py credentials/test.jpg credentials/output.json")
+        print("Uso: python paddle_ocr_service.py <imagen> <output.json> [idioma]")
+        print("Ejemplo: python paddle_ocr_service.py credentials/test.jpg credentials/output.json es")
+        print("Idiomas soportados: es (español), en (inglés), fr (francés), etc.")
         sys.exit(1)
 
     input_image = sys.argv[1]
     output_json = sys.argv[2]
+    # Obtener idioma del argumento o usar español por defecto
+    lang = sys.argv[3] if len(sys.argv) > 3 else "es"
 
     print(f"Procesando: {input_image}")
     
-    # Crear servicio OCR
-    service = PaddleOCRService(lang="en")  # Usar inglés para mejor compatibilidad en Windows
+    # Crear servicio OCR con idioma seleccionable (por defecto español)
+    service = PaddleOCRService(lang=lang)
     
     # Extraer y guardar
     service.extract_from_file(input_image, output_json)
