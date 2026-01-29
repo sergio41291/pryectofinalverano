@@ -24,14 +24,11 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # Copy built application from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user
-RUN addgroup -g 1001 -S nginx && adduser -S nginx -u 1001
-
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --quiet --tries=1 --spider http://localhost:80/ || exit 1
 
 EXPOSE 80
 
-# Start nginx
+CMD ["nginx", "-g", "daemon off;"]# Start nginx
 CMD ["nginx", "-g", "daemon off;"]

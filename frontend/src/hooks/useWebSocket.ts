@@ -37,6 +37,12 @@ export function useWebSocket() {
     newSocket.on('connect', () => {
       console.log('WebSocket connected');
       setIsConnected(true);
+      
+      // Get userId from localStorage (set during login/register)
+      const userId = localStorage.getItem('userId');
+      if (userId && token) {
+        newSocket.emit('authenticate', { userId, token });
+      }
     });
 
     newSocket.on('disconnect', () => {

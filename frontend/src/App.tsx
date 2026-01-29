@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, Mail, Lock, ArrowRight, BookOpen } from 'lucide-react';
+import { User, Mail, Lock, ArrowRight, BookOpen, Check, X } from 'lucide-react';
 import { Home } from './pages/Home';
 import { useAuth } from './context/AuthContext';
 
@@ -7,11 +7,25 @@ function App() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
   const { isAuthenticated, login, register, isLoading } = useAuth();
+
+  // Validar contraseña segura
+  const validatePassword = (pwd: string) => {
+    return {
+      hasMinLength: pwd.length >= 8,
+      hasLetters: /[a-zA-Z]/.test(pwd),
+      hasNumbers: /[0-9]/.test(pwd),
+      hasSpecial: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd),
+    };
+  };
+
+  const passwordValidation = validatePassword(password);
+  const isPasswordValid = Object.values(passwordValidation).every(val => val);
 
   // SI EL USUARIO ESTÁ AUTENTICADO, MUESTRA EL HOME
   if (isAuthenticated) {
@@ -27,7 +41,9 @@ function App() {
       if (isLogin) {
         await login(email, password);
       } else {
-        await register(name, email, password);
+        // Combinar nombre y apellido
+        const fullName = `${firstName} ${lastName}`.trim();
+        await register(fullName, email, password);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error en la operación';
@@ -93,20 +109,37 @@ function App() {
               )}
 
               {!isLogin && (
-                <div className="group">
-                  <label className="block mb-1 text-sm font-medium text-gray-700">Nombre Completo</label>
-                  <div className="relative">
-                    <User className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
-                    <input 
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Ej. Juan Pérez"
-                      required={!isLogin}
-                      className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
-                    />
+                <>
+                  <div className="group">
+                    <label className="block mb-1 text-sm font-medium text-gray-700">Nombre</label>
+                    <div className="relative">
+                      <User className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
+                      <input 
+                        type="text"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        placeholder="Ej. Juan"
+                        required={!isLogin}
+                        className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
+                      />
+                    </div>
                   </div>
-                </div>
+
+                  <div className="group">
+                    <label className="block mb-1 text-sm font-medium text-gray-700">Apellido</label>
+                    <div className="relative">
+                      <User className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2" size={20} />
+                      <input 
+                        type="text"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        placeholder="Ej. Pérez"
+                        required={!isLogin}
+                        className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+                </>
               )}
 
               <div>
@@ -134,9 +167,64 @@ function App() {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
-                    className="w-full py-3 pl-10 pr-4 transition-all border border-gray-200 outline-none rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 focus:bg-white"
+                    className={`w-full py-3 pl-10 pr-4 transition-all border outline-none rounded-xl bg-gray-50 focus:bg-white ${
+                      !isLogin && password
+                        ? isPasswordValid
+                          ? 'border-green-500 focus:ring-2 focus:ring-green-500'
+                          : 'border-red-500 focus:ring-2 focus:ring-red-500'
+                        : 'border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                    }`}
                   />
                 </div>
+                
+                {/* Requisitos de contraseña (solo visible en registro) */}
+                {!isLogin && password && (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-xs font-medium text-gray-600 mb-2">Requisitos de contraseña segura:</p>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordValidation.hasMinLength ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <X size={16} className="text-red-500" />
+                        )}
+                        <span className={passwordValidation.hasMinLength ? 'text-green-600' : 'text-red-600'}>
+                          Mínimo 8 caracteres
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordValidation.hasLetters ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <X size={16} className="text-red-500" />
+                        )}
+                        <span className={passwordValidation.hasLetters ? 'text-green-600' : 'text-red-600'}>
+                          Contiene letras (a-z, A-Z)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordValidation.hasNumbers ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <X size={16} className="text-red-500" />
+                        )}
+                        <span className={passwordValidation.hasNumbers ? 'text-green-600' : 'text-red-600'}>
+                          Contiene números (0-9)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        {passwordValidation.hasSpecial ? (
+                          <Check size={16} className="text-green-500" />
+                        ) : (
+                          <X size={16} className="text-red-500" />
+                        )}
+                        <span className={passwordValidation.hasSpecial ? 'text-green-600' : 'text-red-600'}>
+                          Contiene caracteres especiales (!@#$%^&*)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Botón Principal con estado de carga */}

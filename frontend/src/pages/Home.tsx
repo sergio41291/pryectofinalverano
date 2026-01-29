@@ -1,244 +1,240 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
-import { OCRResults } from '../components/OCRResults';
-import { useAuth } from '../context/AuthContext';
-import { useWebSocket } from '../hooks/useWebSocket';
+import { UploadModal } from '../components/UploadModal';
+import { SummaryModal } from '../components/SummaryModal';
 import {
   Upload,
   FileText,
   BrainCircuit,
-  LogOut,
+  Video,
+  Music,
+  Users,
+  Sparkles,
+  FolderOpen,
   Loader,
   AlertCircle,
+  Copy,
+  X,
 } from 'lucide-react';
-import type { Upload as UploadType, OcrResult } from '../services/api';
-import { uploadService, ocrService } from '../services/api';
 
 export function Home() {
-  const { logout } = useAuth();
-  const { isConnected, notifications, clearNotifications } = useWebSocket();
-  
-  const [uploads, setUploads] = useState<UploadType[]>([]);
-  const [ocrResults, setOcrResults] = useState<Map<string, OcrResult>>(new Map());
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [seccion, setSeccion] = useState('inicio');
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
+  const [summaryResult, setGeneratedSummary] = useState<string | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+  const [copiedToClipboard, setCopiedToClipboard] = useState(false);
 
-  // Cargar uploads al iniciar
-  useEffect(() => {
-    loadUploads();
-  }, []);
+  const misArchivos = [
+    { nombre: 'Clase de Historia.pdf', tipo: 'PDF', fecha: 'Hace 2 horas', icon: FileText, color: 'text-red-500' },
+    { nombre: 'Audio_Biologia.mp3', tipo: 'Audio', fecha: 'Ayer', icon: Music, color: 'text-purple-500' },
+    { nombre: 'Resumen_Calculo.mp4', tipo: 'Video', fecha: '20 Ene', icon: Video, color: 'text-blue-500' },
+  ];
 
-  // Escuchar notificaciones de OCR
-  useEffect(() => {
-    notifications.forEach((notif) => {
-      if (notif.status === 'completed' && notif.result) {
-        setOcrResults((prev) => new Map(prev).set(notif.uploadId, {
-          id: notif.uploadId,
-          uploadId: notif.uploadId,
-          rawText: notif.result!.text,
-          confidence: notif.result!.confidence,
-          language: notif.result!.language,
-          processedAt: new Date().toISOString(),
-        }));
-        setProcessingId(null);
-      } else if (notif.status === 'failed') {
-        setError(notif.message || 'Error al procesar OCR');
-        setProcessingId(null);
-      }
-    });
-    if (notifications.length > 0) {
-      clearNotifications();
+  const renderContenido = () => {
+    switch (seccion) {
+      case 'inicio':
+        return (
+          <>
+            <header className="flex items-center justify-between mb-10">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Mi Inicio</h1>
+                <p className="text-gray-500">Bienvenido a tu biblioteca inteligente.</p>
+              </div>
+            </header>
+
+            <div className="grid grid-cols-1 gap-6 mb-10 md:grid-cols-3">
+              <div onClick={() => setIsSummaryModalOpen(true)} className="p-6 transition-all bg-white border border-gray-100 shadow-sm cursor-pointer rounded-2xl hover:shadow-md group">
+                <div className="flex items-center justify-center w-12 h-12 mb-4 text-blue-600 transition-colors bg-blue-100 rounded-xl group-hover:bg-blue-600 group-hover:text-white">
+                  <BrainCircuit size={24} />
+                </div>
+                <h3 className="font-bold text-gray-800 group-hover:text-blue-600">Procesar con IA</h3>
+                <p className="text-sm text-gray-500">Resúmenes y mapas mentales.</p>
+              </div>
+            </div>
+
+            <section>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-gray-800">Materiales Recientes</h2>
+                <button onClick={() => setSeccion('materiales')} className="text-sm font-semibold text-blue-600 hover:underline">Ver todos</button>
+              </div>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {misArchivos.map((archivo, index) => (
+                  <div key={index} className="flex items-center gap-4 p-4 transition-all bg-white border border-gray-200 shadow-sm cursor-pointer rounded-xl hover:border-blue-300 hover:shadow-md">
+                    <div className={`${archivo.color} bg-gray-50 p-3 rounded-lg`}><archivo.icon size={24} /></div>
+                    <div className="flex-1">
+                      <h4 className="text-sm font-bold text-gray-800 truncate">{archivo.nombre}</h4>
+                      <p className="text-xs text-gray-500">{archivo.tipo} • {archivo.fecha}</p>
+                    </div>
+                  </div>
+                ))}
+
+                <div
+                  onClick={() => setIsUploadModalOpen(true)}
+                  className="flex items-center justify-center gap-2 p-4 text-gray-500 transition-all border-2 border-gray-300 border-dashed shadow-sm cursor-pointer rounded-xl hover:border-blue-400 hover:text-blue-600 hover:bg-white"
+                >
+                  <Upload size={20} />
+                  <span className="text-sm font-medium">Subir nuevo</span>
+                </div>
+              </div>
+            </section>
+          </>
+        );
+
+      case 'materiales':
+        return (
+          <div>
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <h1 className="mb-2 text-3xl font-bold text-gray-800">Mis Materiales</h1>
+                <p className="text-gray-500">Organiza y gestiona todos tus documentos cargados.</p>
+              </div>
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold flex items-center gap-2 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/20"
+              >
+                <Upload size={18} /> Subir Archivo
+              </button>
+            </div>
+            <div className="p-20 text-center bg-white border border-gray-100 shadow-sm rounded-3xl">
+              <FolderOpen size={48} className="mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-400">Aquí verás tu lista completa de archivos muy pronto.</p>
+            </div>
+          </div>
+        );
+
+      case 'ia':
+        return (
+          <div>
+            <h1 className="flex items-center gap-3 mb-2 text-3xl font-bold text-gray-800">
+              IA Lab <Sparkles className="text-blue-600" />
+            </h1>
+            <p className="mb-8 text-gray-500">El laboratorio inteligente para potenciar tu cerebro.</p>
+
+            {/* Mostrar resultado del resumen si existe */}
+            {summaryResult && (
+              <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-2xl">
+                <div className="flex items-start justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900">📋 Resumen Generado</h3>
+                  <button
+                    onClick={() => setGeneratedSummary(null)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="bg-white p-4 rounded-lg max-h-96 overflow-y-auto mb-4">
+                  <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+                    {summaryResult}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(summaryResult);
+                    setCopiedToClipboard(true);
+                    setTimeout(() => setCopiedToClipboard(false), 2000);
+                  }}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
+                >
+                  <Copy size={16} className="inline mr-2" />
+                  {copiedToClipboard ? 'Copiado!' : 'Copiar Resumen'}
+                </button>
+              </div>
+            )}
+
+            {/* Mostrar error si hay */}
+            {summaryError && (
+              <div className="mb-8 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg flex items-center gap-2">
+                <AlertCircle size={20} />
+                {summaryError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="p-8 text-white shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl">
+                <h3 className="mb-2 text-xl font-bold text-white">Resumen Automático</h3>
+                <p className="mb-4 text-sm text-blue-100">Extrae lo más importante de tus PDFs en segundos.</p>
+                <button
+                  onClick={() => setIsSummaryModalOpen(true)}
+                  disabled={isGeneratingSummary}
+                  className="px-6 py-2 text-sm font-bold text-blue-600 bg-white rounded-xl hover:bg-blue-50 transition-colors disabled:opacity-50"
+                >
+                  {isGeneratingSummary ? (
+                    <>
+                      <Loader className="inline animate-spin mr-2" size={16} />
+                      Generando...
+                    </>
+                  ) : (
+                    'Probar ahora'
+                  )}
+                </button>
+              </div>
+              <div className="p-8 transition-all bg-white border border-gray-100 shadow-sm rounded-3xl hover:shadow-md">
+                <h3 className="mb-2 font-sans text-xl font-bold text-gray-800">Generar Cuestionario</h3>
+                <p className="mb-4 text-sm text-gray-500">Crea preguntas de estudio basadas en tu material.</p>
+                <button
+                  onClick={() => {}}
+                  className="px-6 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                >
+                  Empezar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'comunidades':
+        return (
+          <div>
+            <h1 className="mb-2 text-3xl font-bold text-gray-800">Comunidades</h1>
+            <p className="mb-8 text-gray-500">Aprende y comparte con otros estudiantes de LearnMind AI.</p>
+            <div className="flex flex-col items-center justify-center p-20 border-2 border-white bg-blue-50 rounded-3xl">
+              <Users size={48} className="mb-4 text-blue-400" />
+              <h3 className="text-xl font-bold text-blue-800">Próximamente</h3>
+              <p className="text-blue-600/60">Estamos preparando el espacio para colaborar con tu clase.</p>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
-  }, [notifications, clearNotifications]);
-
-  const loadUploads = async () => {
-    try {
-      setIsLoading(true);
-      const response = await uploadService.listUploads();
-      setUploads(response.data);
-      
-      // Cargar resultados de OCR para cada upload
-      for (const upload of response.data) {
-        try {
-          const result = await ocrService.getOcrResult(upload.id);
-          setOcrResults((prev) => new Map(prev).set(upload.id, result));
-        } catch {
-          // Sin resultado aún
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al cargar documentos');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setIsUploading(true);
-      setError(null);
-      
-      // Subir archivo
-      const upload = await uploadService.uploadFile(file);
-      setUploads((prev) => [upload, ...prev]);
-      
-      // Iniciar OCR automáticamente
-      setProcessingId(upload.id);
-      await ocrService.processOcr(upload.id, 'es');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al subir archivo');
-    } finally {
-      setIsUploading(false);
-      // Reset input
-      e.target.value = '';
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar />
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar seccionActual={seccion} setSeccion={setSeccion} />
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Mis Documentos</h1>
-              <p className="text-gray-600 mt-1">
-                WebSocket: <span className={isConnected ? 'text-green-600 font-medium' : 'text-red-600'}>
-                  {isConnected ? '🟢 Conectado' : '🔴 Desconectado'}
-                </span>
-              </p>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <LogOut size={20} />
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
+      <main className="flex-1 p-8 ml-64">
+        {renderContenido()}
+      </main>
 
-        {/* Content */}
-        <div className="p-8 max-w-6xl mx-auto">
-          {/* Upload Area */}
-          <div className="mb-10">
-            <label className="block">
-              <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors">
-                <Upload className="mx-auto mb-4 text-gray-400" size={48} />
-                <h3 className="font-semibold text-gray-900 mb-1">
-                  {isUploading ? 'Subiendo...' : 'Sube tu documento aquí'}
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  {isUploading
-                    ? 'Por favor espera...'
-                    : 'PDF, imágenes o documentos (máx 100MB)'}
-                </p>
-                <input
-                  type="file"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                  accept=".pdf,.jpg,.jpeg,.png,.gif,.bmp"
-                  className="hidden"
-                />
-              </div>
-            </label>
-          </div>
+      <UploadModal
+        isOpen={isUploadModalOpen}
+        onClose={() => setIsUploadModalOpen(false)}
+      />
 
-          {/* Error Display */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg flex items-gap gap-2">
-              <AlertCircle size={20} />
-              {error}
-            </div>
-          )}
+      <SummaryModal
+        isOpen={isSummaryModalOpen}
+        onClose={() => setIsSummaryModalOpen(false)}
+        onSummaryStart={async (data) => {
+          setIsSummaryModalOpen(false);
+          setIsGeneratingSummary(true);
+          setSummaryError(null);
 
-          {/* Status */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader className="animate-spin text-blue-600 mr-2" size={24} />
-              <span className="text-gray-600">Cargando documentos...</span>
-            </div>
-          )}
-
-          {/* Documents List */}
-          {!isLoading && uploads.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="mx-auto text-gray-400 mb-4" size={48} />
-              <h3 className="text-lg font-semibold text-gray-900">Sin documentos</h3>
-              <p className="text-gray-600">Sube tu primer documento para comenzar</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {uploads.map((upload) => {
-                const result = ocrResults.get(upload.id);
-                const isProcessing = processingId === upload.id;
-
-                return (
-                  <div key={upload.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg text-blue-600">
-                          <FileText size={24} />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{upload.fileName}</h3>
-                          <p className="text-sm text-gray-500">
-                            {(upload.fileSize / 1024).toFixed(2)} KB • {new Date(upload.uploadedAt).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {isProcessing ? (
-                          <div className="flex items-center gap-2 text-blue-600">
-                            <Loader className="animate-spin" size={16} />
-                            <span className="text-sm font-medium">Procesando...</span>
-                          </div>
-                        ) : result ? (
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
-                            ✓ Completado
-                          </span>
-                        ) : (
-                          <button
-                            onClick={async () => {
-                              setProcessingId(upload.id);
-                              try {
-                                await ocrService.processOcr(upload.id, 'es');
-                              } catch (err) {
-                                setError(err instanceof Error ? err.message : 'Error al procesar');
-                                setProcessingId(null);
-                              }
-                            }}
-                            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                          >
-                            <BrainCircuit size={16} className="inline mr-2" />
-                            Procesar con IA
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Show OCR Result if Available */}
-                    {result && <OCRResults result={result} fileName={upload.fileName} />}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+          try {
+            // Aquí iría la lógica para generar el resumen con Claude
+            // Por ahora mostramos un placeholder
+            const mockSummary = `📝 Resumen del archivo: ${data.uploadId}\n\nTexto extraído:\n${data.ocrText || '(Sin contenido OCR disponible aún)'}`;
+            setGeneratedSummary(mockSummary);
+          } catch (err) {
+            setSummaryError(err instanceof Error ? err.message : 'Error al generar el resumen');
+          } finally {
+            setIsGeneratingSummary(false);
+          }
+        }}
+      />
     </div>
   );
 }

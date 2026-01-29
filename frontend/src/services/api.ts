@@ -69,6 +69,7 @@ export const authService = {
     if (response.data.accessToken) {
       localStorage.setItem('authToken', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('userId', response.data.user.id);
     }
     return response.data;
   },
@@ -78,6 +79,7 @@ export const authService = {
     if (response.data.accessToken) {
       localStorage.setItem('authToken', response.data.accessToken);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('userId', response.data.user.id);
     }
     return response.data;
   },
@@ -85,6 +87,7 @@ export const authService = {
   logout(): void {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('userId');
   },
 
   getCurrentUser() {
