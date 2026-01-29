@@ -11,6 +11,7 @@
     "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strict": true,
+    "strictPropertyInitialization": false,
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
