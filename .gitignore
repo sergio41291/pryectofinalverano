@@ -11,6 +11,11 @@ build/
 __pycache__/
 *.pyc
 
+# Virtual environments
+venv/
+venv_*/
+.venv/
+
 # IDE
 .vscode/
 .idea/
