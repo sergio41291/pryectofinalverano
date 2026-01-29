@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { API_CONFIG } from '../config/api';
 
 export type OcrProgressStep = 'idle' | 'uploading' | 'extracting' | 'generating' | 'completed' | 'error';
 
@@ -32,34 +33,41 @@ export function useOcrProgress() {
 
   // Conectar a Socket.io
   useEffect(() => {
-    const newSocket = io('http://localhost:3000', {
+    const newSocket = io(API_CONFIG.apiUrl, {
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       reconnectionAttempts: 5
     });
 
+    console.log(`Conectando a Socket.io en: ${API_CONFIG.apiUrl}`);
+
     newSocket.on('connect', () => {
-      console.log('Socket.io conectado');
+      console.log('Socket.io conectado exitosamente');
     });
 
     newSocket.on('ocr:uploading', (message: WebSocketMessage) => {
+      console.log('Evento ocr:uploading recibido');
       handleOcrMessage(message);
     });
 
     newSocket.on('ocr:extracting', (message: WebSocketMessage) => {
+      console.log('Evento ocr:extracting recibido');
       handleOcrMessage(message);
     });
 
     newSocket.on('ocr:generating', (message: WebSocketMessage) => {
+      console.log('Evento ocr:generating recibido');
       handleOcrMessage(message);
     });
 
     newSocket.on('ocr:completed', (message: WebSocketMessage) => {
+      console.log('Evento ocr:completed recibido');
       handleOcrMessage(message);
     });
 
     newSocket.on('ocr:error', (message: WebSocketMessage) => {
+      console.log('Evento ocr:error recibido');
       handleOcrMessage(message);
     });
 
