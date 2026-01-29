@@ -220,6 +220,12 @@ export function Home() {
         isOpen={isSummaryModalOpen}
         onClose={() => setIsSummaryModalOpen(false)}
         onSummaryStart={async (data) => {
+          // Validate that we have text to summarize
+          if (!data.ocrText || data.ocrText.trim().length === 0) {
+            setSummaryError('El archivo aún se está procesando. Por favor, espera a que el OCR se complete.');
+            return;
+          }
+
           setIsSummaryModalOpen(false);
           setIsGeneratingSummary(true);
           setSummaryError(null);

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BullModule } from '@nestjs/bull';
 import { OcrService } from './ocr.service';
@@ -15,7 +15,7 @@ import { UploadsModule } from '../uploads/uploads.module';
     BullModule.registerQueue({
       name: 'ocr',
     }),
-    UploadsModule,
+    forwardRef(() => UploadsModule),
   ],
   providers: [OcrService, OcrProcessor, OcrWebSocketGateway, OcrCacheService],
   controllers: [OcrController],

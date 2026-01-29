@@ -47,10 +47,14 @@ export interface AuthResponse {
 export interface Upload {
   id: string;
   fileName: string;
+  originalFileName: string;
   fileSize: number;
   mimeType: string;
-  uploadedAt: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  createdAt: string;
+  updatedAt: string;
+  processedAt?: string;
+  extractedText?: string;
 }
 
 export interface OcrResult {

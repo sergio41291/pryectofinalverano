@@ -39,8 +39,8 @@ async function bootstrap() {
     }),
   );
 
-  // Serialization
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get('Reflector')));
+  // Serialization - Disabled for streaming compatibility
+  // app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get('Reflector')));
 
   // Swagger documentation
   const config = new DocumentBuilder()

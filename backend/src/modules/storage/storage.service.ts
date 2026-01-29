@@ -125,6 +125,19 @@ export class StorageService {
     }
   }
 
+  // Internal method for rollback - no authorization check
+  async deleteDocumentInternal(path: string): Promise<void> {
+    try {
+      await this.minioClientService.deleteFile(this.documentBucket, path);
+      this.logger.log(`Document deleted (internal): ${path}`);
+    } catch (error: any) {
+      // Log but don't throw - best effort cleanup
+      if (error?.code !== 'NoSuchKey') {
+        this.logger.warn(`Failed to delete document during rollback: ${path}`, error?.message);
+      }
+    }
+  }
+
   async getDocumentUrl(userId: string, path: string, expiryHours: number = 24): Promise<string> {
     try {
       // Validar que el usuario puede acceder a este archivo

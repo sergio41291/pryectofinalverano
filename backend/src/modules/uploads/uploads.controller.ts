@@ -18,6 +18,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiParam } from '@nestjs/swagger';
 import { Response } from 'express';
 import { UploadsService } from './uploads.service';
+import { OcrService } from '../ocr/ocr.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('uploads')
@@ -25,7 +26,10 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('uploads')
 export class UploadsController {
-  constructor(private readonly uploadsService: UploadsService) {}
+  constructor(
+    private readonly uploadsService: UploadsService,
+    private readonly ocrService: OcrService,
+  ) {}
 
   @Post()
   @UseInterceptors(FileInterceptor('file'))
@@ -39,7 +43,27 @@ export class UploadsController {
     }
 
     try {
+      // Upload file and create upload record
       const upload = await this.uploadsService.createFromFile(req.user.id, file);
+
+      try {
+        // Automatically create OCR result and queue processing
+        await this.ocrService.initiateOcrProcessing(
+          {
+            uploadId: upload.id,
+            userId: req.user.id,
+            language: 'es',
+          },
+          file.buffer,
+        );
+      } catch (ocrError: any) {
+        // If OCR fails, rollback the upload and delete the file from storage
+        await this.uploadsService.deleteUploadAndFile(upload.id);
+        throw new BadRequestException(
+          `OCR processing failed: ${ocrError?.message || 'Unknown error'}. File has been removed.`,
+        );
+      }
+
       return {
         id: upload.id,
         fileName: upload.fileName,
@@ -74,7 +98,9 @@ export class UploadsController {
         mimeType: upload.mimeType,
         status: upload.status,
         createdAt: upload.createdAt,
+        updatedAt: upload.updatedAt,
         processedAt: upload.processedAt,
+        extractedText: upload.ocrResults?.[0]?.extractedText || null,
       })),
       total,
       limit,

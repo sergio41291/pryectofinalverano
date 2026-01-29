@@ -15,6 +15,40 @@ const ALLOWED_TYPES = {
   audio: { mime: ['audio/mpeg', 'audio/wav', 'audio/ogg'], icon: Music, label: 'Audio' },
 };
 
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+};
+
+// Helper function to format date in Spanish
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  };
+  return date.toLocaleDateString('es-ES', options);
+};
+
+// Helper function to get file type label
+const getFileTypeLabel = (mimeType: string): string => {
+  if (mimeType.includes('pdf')) return 'Documento PDF';
+  if (mimeType.includes('image')) return 'Imagen';
+  if (mimeType.includes('audio') || mimeType.includes('mpeg')) return 'Archivo de Audio';
+  if (mimeType.includes('video')) return 'Video';
+  if (mimeType.includes('word') || mimeType.includes('document')) return 'Documento Word';
+  if (mimeType.includes('spreadsheet') || mimeType.includes('sheet')) return 'Hoja de Cálculo';
+  return 'Documento';
+};
+
 export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalProps) {
   const [tab, setTab] = useState<'new' | 'existing'>('new');
   const [isUploading, setIsUploading] = useState(false);
@@ -23,6 +57,8 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
   const [existingFiles, setExistingFiles] = useState<UploadType[]>([]);
   const [processingExisting, setProcessingExisting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [manualText, setManualText] = useState<string>('');
+  const [showTextInput, setShowTextInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cargar archivos existentes cuando se abre el modal
@@ -35,8 +71,20 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
   const loadExistingFiles = async () => {
     try {
       setIsLoadingFiles(true);
-      const response = await uploadService.listUploads();
-      setExistingFiles(response.data || []);
+      const response = await uploadService.listUploads(1, 100); // Get more files to ensure we have completed ones
+      
+      // Filter only files with completed OCR processing
+      // A file is considered completed if it has extractedText with content
+      const completedFiles = (response.data || [])
+        .filter(file => file.extractedText && file.extractedText.trim().length > 0)
+        .sort((a, b) => {
+          // Sort by creation date, most recent first
+          const dateA = new Date(a.createdAt).getTime();
+          const dateB = new Date(b.createdAt).getTime();
+          return dateB - dateA;
+        });
+      
+      setExistingFiles(completedFiles);
     } catch (err) {
       setError('Error al cargar archivos');
       console.error(err);
@@ -50,13 +98,6 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
     const isImage = Array.isArray(ALLOWED_TYPES.image.mime) && ALLOWED_TYPES.image.mime.includes(file.type);
     const isAudio = Array.isArray(ALLOWED_TYPES.audio.mime) && ALLOWED_TYPES.audio.mime.includes(file.type);
     return isPdf || isImage || isAudio;
-  };
-
-  const getFileIcon = (fileName: string) => {
-    if (fileName.toLowerCase().endsWith('.pdf')) return FileText;
-    if (['jpg', 'jpeg', 'png', 'gif'].some(ext => fileName.toLowerCase().endsWith(ext))) return Image;
-    if (['mp3', 'wav', 'ogg'].some(ext => fileName.toLowerCase().endsWith(ext))) return Music;
-    return FileText;
   };
 
   const handleDrag = (e: React.DragEvent) => {
@@ -95,29 +136,32 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
 
     try {
       setIsUploading(true);
-      const upload = await uploadService.uploadFile(file);
+      await uploadService.uploadFile(file);
 
-      // Obtener el OCR resultado (puede estar vacío inicialmente)
-      try {
-        const ocrResult = await ocrService.getOcrResult(upload.id);
-        onSummaryStart?.({
-          uploadId: upload.id,
-          ocrText: ocrResult.rawText || '',
-        });
-      } catch {
-        // Si no hay OCR aún, continuamos con texto vacío
-        onSummaryStart?.({
-          uploadId: upload.id,
-          ocrText: '',
-        });
-      }
-
-      onClose();
+      // Show text input option since OCR is processing in background
+      setShowTextInput(true);
+      setError('El archivo se está procesando. Puedes ingresar el texto manualmente o esperar a que se procese.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al subir archivo');
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleManualTextSubmit = () => {
+    if (!manualText.trim()) {
+      setError('Por favor ingresa el texto a resumir');
+      return;
+    }
+
+    onSummaryStart?.({
+      uploadId: '',
+      ocrText: manualText.trim(),
+    });
+
+    setManualText('');
+    setShowTextInput(false);
+    onClose();
   };
 
   const handleSelectExisting = async (uploadId: string) => {
@@ -237,6 +281,40 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
                   Formatos permitidos: PDF, JPG, PNG, GIF, MP3, WAV, OGG (máx 100MB)
                 </p>
               </div>
+
+              {/* Manual text input after file upload */}
+              {showTextInput && (
+                <div className="mt-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-3">Ingresa el texto manualmente</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    El archivo se está procesando en background. Puedes ingresar el texto ahora para generar el resumen.
+                  </p>
+                  <textarea
+                    value={manualText}
+                    onChange={(e) => setManualText(e.target.value)}
+                    placeholder="Pega el texto aquí o espera a que se procese el OCR..."
+                    className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 resize-none"
+                  />
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={handleManualTextSubmit}
+                      disabled={!manualText.trim()}
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:bg-gray-400"
+                    >
+                      Generar Resumen
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowTextInput(false);
+                        setManualText('');
+                      }}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -260,33 +338,55 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
                   </button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {existingFiles.map((file) => {
-                    const Icon = getFileIcon(file.fileName);
-                    return (
-                      <button
-                        key={file.id}
-                        onClick={() => handleSelectExisting(file.id)}
-                        disabled={processingExisting}
-                        className="w-full flex items-center gap-4 p-4 bg-gray-50 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors text-left disabled:opacity-50"
-                      >
-                        <div className="flex-shrink-0">
-                          <div className="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
-                            <Icon className="text-gray-600" size={20} />
-                          </div>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 truncate">{file.fileName}</h4>
-                          <p className="text-sm text-gray-500">
-                            {(file.fileSize / 1024).toFixed(2)} KB • {new Date(file.uploadedAt).toLocaleDateString('es-ES')}
-                          </p>
-                        </div>
-                        {processingExisting && (
-                          <Loader className="flex-shrink-0 animate-spin text-blue-600" size={20} />
-                        )}
-                      </button>
-                    );
-                  })}
+                <div className="overflow-x-auto border border-gray-200 rounded-lg">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Nombre del archivo</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Tipo</th>
+                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Fecha de carga</th>
+                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Tamaño</th>
+                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Acción</th>
+                      </tr>
+                    </thead>
+                    <tbody className="max-h-96 overflow-y-auto block">
+                      {existingFiles.map((file, index) => (
+                        <tr
+                          key={file.id}
+                          className={`border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer ${
+                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                          }`}
+                        >
+                          <td className="px-4 py-3 font-medium text-gray-900 truncate max-w-xs">
+                            {file.originalFileName || file.fileName}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {getFileTypeLabel(file.mimeType || 'application/octet-stream')}
+                          </td>
+                          <td className="px-4 py-3 text-gray-600">
+                            {formatDate(file.createdAt)}
+                          </td>
+                          <td className="px-4 py-3 text-right text-gray-600">
+                            {formatFileSize(file.fileSize || 0)}
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => handleSelectExisting(file.id)}
+                              disabled={processingExisting}
+                              className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {processingExisting ? (
+                                <Loader size={16} className="animate-spin" />
+                              ) : (
+                                <FileText size={16} />
+                              )}
+                              Usar
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>

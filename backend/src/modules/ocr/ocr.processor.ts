@@ -6,6 +6,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { OcrResult } from './entities/ocr-result.entity';
 import { OcrWebSocketGateway } from './ocr-websocket.gateway';
 import { OcrCacheService } from './ocr-cache.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { spawn } from 'child_process';
 import * as path from 'path';
 
@@ -18,6 +19,7 @@ export class OcrProcessor {
     private readonly ocrResultRepository: Repository<OcrResult>,
     private readonly websocketGateway: OcrWebSocketGateway,
     private readonly cacheService: OcrCacheService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   @Process()
@@ -80,6 +82,17 @@ export class OcrProcessor {
           errorMessage: error?.message || 'Unknown error',
         },
       );
+
+      // Delete the upload and associated file from storage if OCR fails
+      try {
+        this.logger.log(`Deleting upload ${uploadId} due to OCR failure`);
+        await this.uploadsService.deleteUploadAndFile(uploadId);
+      } catch (deleteError: any) {
+        this.logger.error(
+          `Failed to delete upload ${uploadId} after OCR failure: ${deleteError?.message}`,
+          deleteError?.stack,
+        );
+      }
 
       // Emitir evento de fallo de WebSocket
       this.websocketGateway.notifyOcrFailed(userId, uploadId, error?.message || 'Unknown error');

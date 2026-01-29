@@ -49,7 +49,7 @@ export class AiService {
 
     try {
       const stream = await this.client.messages.stream({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [
@@ -97,7 +97,7 @@ export class AiService {
 
     try {
       const message = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [
@@ -162,7 +162,7 @@ Return ONLY valid JSON, no other text.`;
 
     try {
       const message = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2048,
         system: systemPrompt,
         messages: [
@@ -216,7 +216,7 @@ Keep the tone and style. Return ONLY the translation, no explanations.`;
 
     try {
       const message = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 2048,
         system: systemPrompt,
         messages: [

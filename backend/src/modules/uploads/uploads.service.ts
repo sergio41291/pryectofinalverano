@@ -64,6 +64,7 @@ export class UploadsService {
   async findByUserId(userId: string, limit: number = 20, offset: number = 0): Promise<[Upload[], number]> {
     return this.uploadsRepository.findAndCount({
       where: { userId },
+      relations: ['ocrResults'],
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
@@ -104,5 +105,28 @@ export class UploadsService {
   async getDownloadUrl(userId: string, id: string): Promise<string> {
     const upload = await this.findByUserIdAndUploadId(userId, id);
     return this.storageService.getDocumentUrl(userId, upload.minioPath, 24);
+  }
+
+  async deleteUploadAndFile(uploadId: string): Promise<void> {
+    const upload = await this.findById(uploadId);
+
+    try {
+      // Delete file from MinIO storage (best effort)
+      if (upload.minioPath) {
+        await this.storageService.deleteDocumentInternal(upload.minioPath);
+      }
+    } catch (error: any) {
+      // Log but continue with database deletion
+      console.error(`Failed to delete file from storage: ${error?.message}`);
+    }
+
+    // Delete database record and associated OCR results
+    try {
+      // Delete OCR results first (cascade delete)
+      await this.uploadsRepository.delete(uploadId);
+    } catch (error: any) {
+      console.error(`Failed to delete upload record: ${error?.message}`);
+      throw error;
+    }
   }
 }
