@@ -8,6 +8,7 @@ import { OcrWebSocketGateway } from './ocr-websocket.gateway';
 import { OcrCacheService } from './ocr-cache.service';
 import { OcrResult } from './entities/ocr-result.entity';
 import { UploadsModule } from '../uploads/uploads.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UploadsModule } from '../uploads/uploads.module';
       name: 'ocr',
     }),
     forwardRef(() => UploadsModule),
+    StorageModule,
   ],
   providers: [OcrService, OcrProcessor, OcrWebSocketGateway, OcrCacheService],
   controllers: [OcrController],
