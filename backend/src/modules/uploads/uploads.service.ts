@@ -122,7 +122,17 @@ export class UploadsService {
 
     // Delete database record and associated OCR results
     try {
-      // Delete OCR results first (cascade delete)
+      // Delete OCR results first (explicit deletion before Upload record)
+      if (upload.ocrResults && upload.ocrResults.length > 0) {
+        await this.uploadsRepository
+          .createQueryBuilder()
+          .delete()
+          .from('ocr_results')
+          .where('uploadId = :uploadId', { uploadId })
+          .execute();
+      }
+
+      // Then delete the Upload record
       await this.uploadsRepository.delete(uploadId);
     } catch (error: any) {
       console.error(`Failed to delete upload record: ${error?.message}`);

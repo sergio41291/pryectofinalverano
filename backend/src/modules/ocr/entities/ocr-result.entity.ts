@@ -19,7 +19,7 @@ export class OcrResult {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @ManyToOne(() => Upload, (upload) => upload.ocrResults)
+  @ManyToOne(() => Upload, (upload) => upload.ocrResults, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'uploadId' })
   upload: Upload;
 

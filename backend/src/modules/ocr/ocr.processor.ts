@@ -7,8 +7,11 @@ import { OcrResult } from './entities/ocr-result.entity';
 import { OcrWebSocketGateway } from './ocr-websocket.gateway';
 import { OcrCacheService } from './ocr-cache.service';
 import { UploadsService } from '../uploads/uploads.service';
+import { StorageService } from '../storage/storage.service';
 import { spawn } from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 
 @Processor('ocr')
 export class OcrProcessor {
@@ -20,6 +23,7 @@ export class OcrProcessor {
     private readonly websocketGateway: OcrWebSocketGateway,
     private readonly cacheService: OcrCacheService,
     private readonly uploadsService: UploadsService,
+    private readonly storageService: StorageService,
   ) {}
 
   @Process()
@@ -35,8 +39,11 @@ export class OcrProcessor {
       if (result) {
         this.logger.log(`Using cached OCR result for hash: ${fileHash}`);
       } else {
+        // Obtener información del upload
+        const upload = await this.uploadsService.findById(uploadId);
+        
         // Ejecutar OCR si no está en caché
-        result = await this.executeOcrService(uploadId, language);
+        result = await this.executeOcrService(upload.minioPath, language, uploadId, userId);
         
         // Guardar en caché
         this.cacheService.saveCachedResult(fileHash, result);
@@ -101,68 +108,124 @@ export class OcrProcessor {
     }
   }
 
-  private async executeOcrService(filePath: string, language: string = 'es'): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const pythonScriptPath = path.join(
-        __dirname,
-        '..',
-        '..',
-        '..',
-        '..',
-        'scripts',
-        'paddle_ocr_service.py',
-      );
+  private async executeOcrService(minioPath: string, language: string = 'es', uploadId: string, userId: string): Promise<any> {
+    let tempFilePath: string | null = null;
+    let tempOutputPath: string | null = null;
+
+    try {
+      // Descargar archivo de MinIO a un archivo temporal
+      const tempDir = os.tmpdir();
+      tempFilePath = path.join(tempDir, `ocr_input_${Date.now()}_${uploadId}`);
+      
+      this.logger.log(`Downloading file from MinIO: ${minioPath} to ${tempFilePath}`);
+      
+      // Descargar el archivo
+      const fileBuffer = await this.storageService.downloadDocument(userId, minioPath);
+      fs.writeFileSync(tempFilePath, fileBuffer);
+
+      this.logger.log(`File downloaded, size: ${fileBuffer.length} bytes`);
 
       // Generar ruta de salida temporal
-      const tempOutputPath = path.join(path.dirname(filePath), `ocr_${Date.now()}.json`);
-      
-      // El script espera: python script.py <input> <output> [language]
-      const args = [filePath, tempOutputPath, language];
+      tempOutputPath = path.join(tempDir, `ocr_output_${Date.now()}_${uploadId}.json`);
 
-      const pythonProcess = spawn('python', [pythonScriptPath, ...args], {
-        timeout: 300000, // 5 minutos
-      });
+      return new Promise((resolve, reject) => {
+        const pythonScriptPath = path.join(
+          __dirname,
+          '..',
+          '..',
+          '..',
+          '..',
+          'scripts',
+          'paddle_ocr_service.py',
+        );
 
-      let stdout = '';
-      let stderr = '';
+        this.logger.log(`Python script path: ${pythonScriptPath}`);
+        this.logger.log(`Input file: ${tempFilePath}`);
+        this.logger.log(`Output file: ${tempOutputPath}`);
 
-      pythonProcess.stdout?.on('data', (data: Buffer) => {
-        stdout += data.toString();
-        this.logger.debug(`OCR stdout: ${data.toString()}`);
-      });
-
-      pythonProcess.stderr?.on('data', (data: Buffer) => {
-        stderr += data.toString();
-        this.logger.warn(`OCR stderr: ${data.toString()}`);
-      });
-
-      pythonProcess.on('close', (code: number) => {
-        if (code !== 0) {
-          return reject(new Error(`Python OCR service exited with code ${code}: ${stderr}`));
+        if (!tempFilePath || !tempOutputPath) {
+          return reject(new Error('Temp file paths not initialized'));
         }
 
-        try {
-          // Leer el archivo JSON generado por el script
-          const fs = require('fs');
-          if (!fs.existsSync(tempOutputPath)) {
-            return reject(new Error(`OCR output file not found: ${tempOutputPath}`));
+        // El script espera: python script.py <input> <output> [language]
+        const args: string[] = [tempFilePath, tempOutputPath, language];
+
+        const pythonProcess = spawn('python', [pythonScriptPath, ...args], {
+          timeout: 300000, // 5 minutos
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        pythonProcess.stdout?.on('data', (data: Buffer) => {
+          stdout += data.toString();
+          this.logger.debug(`OCR stdout: ${data.toString()}`);
+        });
+
+        pythonProcess.stderr?.on('data', (data: Buffer) => {
+          stderr += data.toString();
+          this.logger.warn(`OCR stderr: ${data.toString()}`);
+        });
+
+        pythonProcess.on('close', (code: number) => {
+          try {
+            if (code !== 0) {
+              return reject(new Error(`Python OCR service exited with code ${code}: ${stderr}`));
+            }
+
+            // Leer el archivo JSON generado por el script
+            if (!tempOutputPath || !fs.existsSync(tempOutputPath)) {
+              return reject(new Error(`OCR output file not found: ${tempOutputPath}`));
+            }
+            
+            const outputContent = fs.readFileSync(tempOutputPath, 'utf-8');
+            const result = JSON.parse(outputContent);
+            
+            resolve(result);
+          } catch (error: any) {
+            reject(new Error(`Failed to parse OCR output: ${error?.message}`));
+          } finally {
+            // Limpiar archivos temporales
+            if (tempFilePath && fs.existsSync(tempFilePath)) {
+              try {
+                fs.unlinkSync(tempFilePath);
+                this.logger.log(`Cleaned up input file: ${tempFilePath}`);
+              } catch (e) {
+                this.logger.warn(`Failed to delete input file: ${e}`);
+              }
+            }
+            if (tempOutputPath && fs.existsSync(tempOutputPath)) {
+              try {
+                fs.unlinkSync(tempOutputPath);
+                this.logger.log(`Cleaned up output file: ${tempOutputPath}`);
+              } catch (e) {
+                this.logger.warn(`Failed to delete output file: ${e}`);
+              }
+            }
           }
-          
-          const outputContent = fs.readFileSync(tempOutputPath, 'utf-8');
-          const result = JSON.parse(outputContent);
-          
-          // Limpiar archivo temporal
-          fs.unlinkSync(tempOutputPath);
-          
-          resolve(result);
-        } catch (error: any) {
-          reject(new Error(`Failed to parse OCR output: ${error?.message}`));
-        }
-      });
+        });
 
-      pythonProcess.on('error', (error: any) => {
-        reject(new Error(`Failed to spawn OCR process: ${error?.message}`));
+        pythonProcess.on('error', (error: any) => {
+          reject(new Error(`Failed to spawn OCR process: ${error?.message}`));
+        });
       });
-    });
+    } catch (error: any) {
+      // Limpiar archivos temporales en caso de error
+      if (tempFilePath && fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          this.logger.warn(`Failed to delete temp file on error: ${e}`);
+        }
+      }
+      if (tempOutputPath && fs.existsSync(tempOutputPath)) {
+        try {
+          fs.unlinkSync(tempOutputPath);
+        } catch (e) {
+          this.logger.warn(`Failed to delete temp output on error: ${e}`);
+        }
+      }
+      throw error;
+    }
   }
 }

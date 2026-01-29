@@ -69,6 +69,6 @@ export class Upload {
   @JoinColumn({ name: 'userId' })
   user: User;
 
-  @OneToMany(() => OcrResult, (ocrResult) => ocrResult.upload)
+  @OneToMany(() => OcrResult, (ocrResult) => ocrResult.upload, { onDelete: 'CASCADE' })
   ocrResults: OcrResult[];
 }
