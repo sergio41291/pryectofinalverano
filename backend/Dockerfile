@@ -1,48 +1,49 @@
 # Stage 1: Build
-FROM node:18-alpine as builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar package.json
+# Copy package files
 COPY package*.json ./
 
-# Instalar dependencias
-RUN npm ci --only=production && \
-    npm cache clean --force
+# Install dependencies (including devDependencies for building)
+RUN npm ci
 
-# Copiar código fuente
+# Copy source code
 COPY . .
 
-# Compilar TypeScript
+# Build application
 RUN npm run build
 
-# Stage 2: Runtime
-FROM node:18-alpine
+# Stage 2: Production
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar dumb-init para manejar signals correctamente
+# Install dumb-init to handle signals properly
 RUN apk add --no-cache dumb-init
 
-# Crear usuario no-root
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nestjs -u 1001
+# Copy package files
+COPY package*.json ./
 
-# Copiar node_modules y dist desde builder
-COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nestjs:nodejs /app/dist ./dist
+# Install only production dependencies
+RUN npm ci --only=prod
 
-# Cambiar a usuario no-root
-USER nestjs
+# Copy compiled application from builder
+COPY --from=builder /app/dist ./dist
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
+USER nodejs
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3001/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-EXPOSE 3000
-
-# Usar dumb-init como PID 1
+# Use dumb-init to handle signals
 ENTRYPOINT ["dumb-init", "--"]
 
-# Comando por defecto
+# Start application
 CMD ["node", "dist/main"]
+
+EXPOSE 3001
