@@ -46,11 +46,7 @@ export class OcrService {
           fileHash: fileHash,
         },
         {
-          attempts: 3,
-          backoff: {
-            type: 'exponential',
-            delay: 2000,
-          },
+          attempts: 1,
           removeOnComplete: false,
           removeOnFail: false,
         },
