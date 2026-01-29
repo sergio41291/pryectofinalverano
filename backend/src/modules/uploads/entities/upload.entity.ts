@@ -6,9 +6,11 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { OcrResult } from '../../ocr/entities/ocr-result.entity';
 
 @Entity('uploads')
 @Index(['userId', 'createdAt'])
@@ -66,4 +68,7 @@ export class Upload {
   @ManyToOne(() => User, (user) => user.uploads, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @OneToMany(() => OcrResult, (ocrResult) => ocrResult.upload)
+  ocrResults: OcrResult[];
 }
