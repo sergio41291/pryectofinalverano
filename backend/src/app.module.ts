@@ -5,6 +5,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { StorageModule } from './modules/storage/storage.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -34,6 +35,7 @@ import { Upload } from './modules/uploads/entities/upload.entity';
     AuthModule,
     UsersModule,
     SubscriptionsModule,
+    StorageModule,
     UploadsModule,
   ],
   controllers: [AppController],
