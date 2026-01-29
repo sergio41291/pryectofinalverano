@@ -5,6 +5,7 @@ import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 import { OcrResult } from './entities/ocr-result.entity';
 import { CreateOcrResultDto } from './dto/create-ocr-result.dto';
+import { OcrCacheService } from './ocr-cache.service';
 
 @Injectable()
 export class OcrService {
@@ -15,10 +16,17 @@ export class OcrService {
     private readonly ocrResultRepository: Repository<OcrResult>,
     @InjectQueue('ocr')
     private readonly ocrQueue: Queue,
+    private readonly cacheService: OcrCacheService,
   ) {}
 
-  async initiateOcrProcessing(dto: CreateOcrResultDto): Promise<OcrResult> {
+  async initiateOcrProcessing(dto: CreateOcrResultDto, fileBuffer?: Buffer): Promise<OcrResult> {
     try {
+      // Calcular hash del archivo para caché
+      let fileHash = '';
+      if (fileBuffer) {
+        fileHash = this.cacheService.calculateFileHash(fileBuffer);
+      }
+
       // Crear registro OCR en base de datos
       const ocrResult = this.ocrResultRepository.create({
         uploadId: dto.uploadId,
@@ -35,6 +43,7 @@ export class OcrService {
           userId: dto.userId,
           ocrResultId: savedResult.id,
           language: dto.language || 'es',
+          fileHash: fileHash,
         },
         {
           attempts: 3,

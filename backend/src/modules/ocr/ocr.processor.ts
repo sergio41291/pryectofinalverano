@@ -4,6 +4,8 @@ import { Job } from 'bull';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { OcrResult } from './entities/ocr-result.entity';
+import { OcrWebSocketGateway } from './ocr-websocket.gateway';
+import { OcrCacheService } from './ocr-cache.service';
 import { spawn } from 'child_process';
 import * as path from 'path';
 
@@ -14,20 +16,32 @@ export class OcrProcessor {
   constructor(
     @InjectRepository(OcrResult)
     private readonly ocrResultRepository: Repository<OcrResult>,
+    private readonly websocketGateway: OcrWebSocketGateway,
+    private readonly cacheService: OcrCacheService,
   ) {}
 
   @Process()
   async processOcr(job: Job): Promise<any> {
-    const { uploadId, userId, ocrResultId, language } = job.data;
+    const { uploadId, userId, ocrResultId, language, fileHash } = job.data;
 
     try {
       this.logger.log(`Processing OCR job ${job.id} for upload ${uploadId}`);
 
-      // Llamar al servicio OCR en Python
-      const result = await this.executeOcrService(uploadId, language);
+      // Buscar en caché primero
+      let result = this.cacheService.getCachedResult(fileHash);
 
-      // Actualizar resultado en MongoDB
-      await this.ocrResultRepository.update(
+      if (result) {
+        this.logger.log(`Using cached OCR result for hash: ${fileHash}`);
+      } else {
+        // Ejecutar OCR si no está en caché
+        result = await this.executeOcrService(uploadId, language);
+        
+        // Guardar en caché
+        this.cacheService.saveCachedResult(fileHash, result);
+      }
+
+      // Actualizar resultado en base de datos
+      const updatedResult = await this.ocrResultRepository.update(
         { id: ocrResultId },
         {
           status: 'completed',
@@ -47,6 +61,12 @@ export class OcrProcessor {
         },
       );
 
+      // Emitir evento de WebSocket
+      const ocrResult = await this.ocrResultRepository.findOneBy({ id: ocrResultId });
+      if (ocrResult) {
+        this.websocketGateway.notifyOcrCompleted(userId, ocrResult);
+      }
+
       this.logger.log(`OCR processing completed for job ${job.id}`);
       return result;
     } catch (error: any) {
@@ -60,6 +80,9 @@ export class OcrProcessor {
           errorMessage: error?.message || 'Unknown error',
         },
       );
+
+      // Emitir evento de fallo de WebSocket
+      this.websocketGateway.notifyOcrFailed(userId, uploadId, error?.message || 'Unknown error');
 
       throw error;
     }

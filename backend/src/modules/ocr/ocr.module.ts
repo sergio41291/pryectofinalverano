@@ -4,6 +4,8 @@ import { BullModule } from '@nestjs/bull';
 import { OcrService } from './ocr.service';
 import { OcrController } from './ocr.controller';
 import { OcrProcessor } from './ocr.processor';
+import { OcrWebSocketGateway } from './ocr-websocket.gateway';
+import { OcrCacheService } from './ocr-cache.service';
 import { OcrResult } from './entities/ocr-result.entity';
 import { UploadsModule } from '../uploads/uploads.module';
 
@@ -15,8 +17,8 @@ import { UploadsModule } from '../uploads/uploads.module';
     }),
     UploadsModule,
   ],
-  providers: [OcrService, OcrProcessor],
+  providers: [OcrService, OcrProcessor, OcrWebSocketGateway, OcrCacheService],
   controllers: [OcrController],
-  exports: [OcrService],
+  exports: [OcrService, OcrWebSocketGateway, OcrCacheService],
 })
 export class OcrModule {}
