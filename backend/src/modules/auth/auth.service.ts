@@ -20,12 +20,17 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(email: string, password: string, firstName: string, lastName: string): Promise<{ accessToken: string; user: User }> {
-    if (!email || !password || !firstName || !lastName) {
+  async register(email: string, password: string, name: string): Promise<{ accessToken: string; user: User }> {
+    if (!email || !password || !name) {
       throw new BadRequestException('Missing required fields');
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Split name into firstName and lastName
+    const nameParts = name.trim().split(/\s+/);
+    const firstName = nameParts[0];
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : nameParts[0];
 
     const user = await this.usersService.create({
       email,

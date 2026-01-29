@@ -100,7 +100,11 @@ export class OcrProcessor {
         'paddle_ocr_service.py',
       );
 
-      const args = ['--input', filePath, '--language', language, '--output-format', 'json'];
+      // Generar ruta de salida temporal
+      const tempOutputPath = path.join(path.dirname(filePath), `ocr_${Date.now()}.json`);
+      
+      // El script espera: python script.py <input> <output> [language]
+      const args = [filePath, tempOutputPath, language];
 
       const pythonProcess = spawn('python', [pythonScriptPath, ...args], {
         timeout: 300000, // 5 minutos
@@ -111,6 +115,7 @@ export class OcrProcessor {
 
       pythonProcess.stdout?.on('data', (data: Buffer) => {
         stdout += data.toString();
+        this.logger.debug(`OCR stdout: ${data.toString()}`);
       });
 
       pythonProcess.stderr?.on('data', (data: Buffer) => {
@@ -124,7 +129,18 @@ export class OcrProcessor {
         }
 
         try {
-          const result = JSON.parse(stdout);
+          // Leer el archivo JSON generado por el script
+          const fs = require('fs');
+          if (!fs.existsSync(tempOutputPath)) {
+            return reject(new Error(`OCR output file not found: ${tempOutputPath}`));
+          }
+          
+          const outputContent = fs.readFileSync(tempOutputPath, 'utf-8');
+          const result = JSON.parse(outputContent);
+          
+          // Limpiar archivo temporal
+          fs.unlinkSync(tempOutputPath);
+          
           resolve(result);
         } catch (error: any) {
           reject(new Error(`Failed to parse OCR output: ${error?.message}`));

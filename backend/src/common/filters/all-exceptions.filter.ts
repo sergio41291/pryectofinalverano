@@ -38,6 +38,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       exception instanceof Error ? exception.stack : '',
     );
 
+    // Log validation errors with more detail
+    if (status === 400 && details && details['message']) {
+      this.logger.debug(`Validation errors: ${JSON.stringify(details)}`);
+    }
+
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),

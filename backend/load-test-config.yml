@@ -1,0 +1,152 @@
+config:
+  target: "http://localhost:3001"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warmup"
+    - duration: 60
+      arrivalRate: 50
+      name: "Ramp up to sustained"
+    - duration: 120
+      arrivalRate: 100
+      name: "Sustained load test"
+    - duration: 30
+      arrivalRate: 10
+      name: "Ramp down"
+  
+  processor: "./load-test-processor.js"
+  
+  variables:
+    # Test users pool
+    emails:
+      - "loadtest1@learmmind.ai"
+      - "loadtest2@learmmind.ai"
+      - "loadtest3@learmmind.ai"
+      - "loadtest4@learmmind.ai"
+      - "loadtest5@learmmind.ai"
+  
+  # Connection settings
+  http:
+    timeout: 30
+    max: 100
+  
+  # Request defaults
+  defaults:
+    headers:
+      User-Agent: "Artillery Load Test/1.0"
+      Content-Type: "application/json"
+  
+  # Report settings
+  metrics:
+    histogram:
+      - response_time
+    summary:
+      - p50
+      - p95
+      - p99
+
+scenarios:
+  # Scenario 1: Basic Authentication Flow
+  - name: "Auth Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/register"
+          json:
+            name: "Load Test User {{ $randomNumber(1000, 9999) }}"
+            email: "loadtest{{ $randomNumber(1000, 9999) }}@learmmind.ai"
+            password: "LoadTest123!Secure"
+          capture:
+            json: "$.accessToken"
+            as: "accessToken"
+          expect:
+            - statusCode: [200, 201, 400]  # Accept existing user
+      - think: 2
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest{{ $randomNumber(1000, 9999) }}@learmmind.ai"
+            password: "LoadTest123!Secure"
+          capture:
+            json: "$.accessToken"
+            as: "accessToken"
+          expect:
+            - statusCode: [200, 401]
+
+  # Scenario 2: Upload & List
+  - name: "Upload Operations"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest@learmmind.ai"
+            password: "LoadTest123!Secure"
+          capture:
+            json: "$.accessToken"
+            as: "token"
+      - think: 1
+      - get:
+          url: "/api/uploads?page=1&limit=10"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200, 401]
+      - think: 1
+      - post:
+          url: "/api/uploads"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          formData:
+            file: "@./sample.pdf"
+          expect:
+            - statusCode: [200, 201, 400, 413]
+
+  # Scenario 3: OCR Processing
+  - name: "OCR Processing"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest@learmmind.ai"
+            password: "LoadTest123!Secure"
+          capture:
+            json: "$.accessToken"
+            as: "token"
+      - think: 1
+      - get:
+          url: "/api/ocr"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200]
+      - think: 2
+      - get:
+          url: "/api/users/profile"
+          headers:
+            Authorization: "Bearer {{ token }}"
+          expect:
+            - statusCode: [200]
+
+  # Scenario 4: WebSocket connection simulation
+  - name: "WebSocket Connection"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "loadtest@learmmind.ai"
+            password: "LoadTest123!Secure"
+          capture:
+            json: "$.accessToken"
+            as: "token"
+      - think: 5
+      - ws:
+          url: "ws://localhost:3001/socket.io/"
+          action: "send"
+          json:
+            transport: "websocket"
+      - think: 10  # Simulate connection hold time
+      - ws:
+          action: "close"

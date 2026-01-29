@@ -11,6 +11,8 @@ import {
   Request,
   Query,
   Res,
+  ParseIntPipe,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiParam } from '@nestjs/swagger';
@@ -55,8 +57,8 @@ export class UploadsController {
   @Get()
   async getUserUploads(
     @Request() req: any,
-    @Query('limit') limit: number = 20,
-    @Query('offset') offset: number = 0,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number = 20,
+    @Query('offset', new DefaultValuePipe(0), ParseIntPipe) offset: number = 0,
   ) {
     const [uploads, total] = await this.uploadsService.findByUserId(
       req.user.id,

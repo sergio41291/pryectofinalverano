@@ -1,0 +1,11 @@
+# LearnMind AI - Python Dependencies
+# Para instalar: pip install -r requirements.txt
+
+# OCR Library
+paddleocr==3.4.0
+
+# Imagen
+Pillow>=10.0.0
+
+# Utilidades
+numpy>=1.20.0

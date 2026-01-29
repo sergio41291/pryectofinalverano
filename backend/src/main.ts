@@ -17,11 +17,10 @@ async function bootstrap() {
   // Middleware
   app.use(helmet());
   app.use(compression());
-  app.use(new RateLimitMiddleware());
 
   // CORS
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    origin: ['http://localhost:5173', 'http://localhost:3000', 'http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -36,6 +35,7 @@ async function bootstrap() {
       transformOptions: {
         enableImplicitConversion: true,
       },
+      errorHttpStatusCode: 400,
     }),
   );
 
@@ -52,6 +52,9 @@ async function bootstrap() {
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+
+  // Set global route prefix
+  app.setGlobalPrefix('api');
 
   const port = process.env.PORT || 3001;
   await app.listen(port);
