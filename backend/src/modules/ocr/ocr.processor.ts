@@ -33,14 +33,22 @@ export class OcrProcessor {
     try {
       this.logger.log(`Processing OCR job ${job.id} for upload ${uploadId}`);
 
+      // Emitir evento de inicio de subida
+      this.websocketGateway.notifyUploading(userId, uploadId);
+
       // Buscar en caché primero
       let result = this.cacheService.getCachedResult(fileHash);
 
       if (result) {
         this.logger.log(`Using cached OCR result for hash: ${fileHash}`);
+        // Emitir evento de extracción
+        this.websocketGateway.notifyExtracting(userId, uploadId);
       } else {
         // Obtener información del upload
         const upload = await this.uploadsService.findById(uploadId);
+        
+        // Emitir evento de extracción
+        this.websocketGateway.notifyExtracting(userId, uploadId);
         
         // Ejecutar OCR si no está en caché
         result = await this.executeOcrService(upload.minioPath, language, uploadId, userId);
@@ -48,6 +56,9 @@ export class OcrProcessor {
         // Guardar en caché
         this.cacheService.saveCachedResult(fileHash, result);
       }
+
+      // Emitir evento de generación de resumen
+      this.websocketGateway.notifyGenerating(userId, uploadId);
 
       // Actualizar resultado en base de datos
       const updatedResult = await this.ocrResultRepository.update(
@@ -70,16 +81,22 @@ export class OcrProcessor {
         },
       );
 
-      // Emitir evento de WebSocket
+      // Emitir evento de WebSocket con resumen
       const ocrResult = await this.ocrResultRepository.findOneBy({ id: ocrResultId });
       if (ocrResult) {
-        this.websocketGateway.notifyOcrCompleted(userId, ocrResult);
+        // Para ahora, usaremos el texto extraído como resumen
+        // En el futuro, aquí iría la llamada a Claude para generar el resumen
+        const summary = result.text?.substring(0, 500) || 'Resumen disponible en detalle';
+        this.websocketGateway.notifyOcrCompletedWithSummary(userId, uploadId, ocrResult, summary);
       }
 
       this.logger.log(`OCR processing completed for job ${job.id}`);
       return result;
     } catch (error: any) {
       this.logger.error(`OCR processing failed for job ${job.id}: ${error?.message}`, error?.stack);
+
+      // Emitir evento de error
+      this.websocketGateway.notifyOcrErrorWithSummary(userId, uploadId, error?.message || 'Unknown error');
 
       // Marcar como fallido
       await this.ocrResultRepository.update(
@@ -100,9 +117,6 @@ export class OcrProcessor {
           deleteError?.stack,
         );
       }
-
-      // Emitir evento de fallo de WebSocket
-      this.websocketGateway.notifyOcrFailed(userId, uploadId, error?.message || 'Unknown error');
 
       throw error;
     }

@@ -1,8 +1,39 @@
-import { X, Upload, File, CheckCircle2, Sparkles, Zap } from 'lucide-react';
-import { useState } from 'react';
+import { X, Upload, File, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
+import { useOcrProgress } from '../hooks/useOcrProgress';
+import { useRef } from 'react';
 
 export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-  const [step, setStep] = useState(1); // 1: Seleccionar, 2: Subiendo, 3: Resumen automático, 4: Éxito
+  const { state, reset } = useOcrProgress();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = async (file: File) => {
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/uploads/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al subir el archivo');
+      }
+
+      // El estado se actualiza vía WebSocket
+    } catch (error) {
+      console.error('Error al subir archivo:', error);
+    }
+  };
+
+  const handleReset = () => {
+    reset();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -12,87 +43,147 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
 
       {/* Caja del Modal */}
-      <div className="relative w-full max-w-md overflow-hidden duration-200 bg-white shadow-2xl rounded-3xl animate-in fade-in zoom-in">
-        <button onClick={onClose} className="absolute text-gray-400 top-4 right-4 hover:text-gray-600">
+      <div className="relative w-full max-w-2xl overflow-hidden duration-200 bg-white shadow-2xl rounded-3xl animate-in fade-in zoom-in">
+        <button onClick={onClose} className="absolute text-gray-400 top-4 right-4 hover:text-gray-600 z-10">
           <X size={24} />
         </button>
 
-        <div className="p-8 text-center">
-          {step === 1 && (
+        <div className="p-8">
+          {/* Paso 1: Seleccionar archivo */}
+          {state.step === 'idle' && (
             <>
-              <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 text-blue-600 rounded-full bg-blue-50">
-                <Upload size={40} />
+              <div className="text-center">
+                <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 text-blue-600 rounded-full bg-blue-50">
+                  <Upload size={40} />
+                </div>
+                <h2 className="mb-2 text-2xl font-bold text-gray-800">Resumen Automático</h2>
+                <p className="mb-8 text-sm text-gray-500">Sube un archivo para extraer texto y generar un resumen con IA</p>
               </div>
-              <h2 className="mb-2 text-2xl font-bold text-gray-800">Subir Material</h2>
-              <p className="mb-8 text-sm text-gray-500">Sube tus PDFs, imágenes o audios para que la IA los procese.</p>
               
               <div className="p-8 mb-6 transition-all border-2 border-gray-200 border-dashed cursor-pointer rounded-2xl hover:border-blue-400 hover:bg-blue-50/50 group">
-                <input type="file" className="hidden" id="fileInput" onChange={() => setStep(2)} />
-                <label htmlFor="fileInput" className="cursor-pointer">
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  className="hidden" 
+                  id="fileInput" 
+                  onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])}
+                  accept=".pdf,.jpg,.jpeg,.png,.gif"
+                />
+                <label htmlFor="fileInput" className="cursor-pointer block">
                   <File className="mx-auto mb-2 text-gray-300 group-hover:text-blue-400" size={32} />
-                  <span className="block text-sm font-medium text-gray-600">Arrastra tus archivos aquí</span>
+                  <span className="block text-sm font-medium text-gray-600">Arrastra tu archivo aquí</span>
                   <span className="text-xs text-gray-400">o haz clic para buscar</span>
                 </label>
               </div>
+              <p className="text-xs text-gray-400 text-center">Formatos soportados: PDF, JPG, PNG, GIF (máx 100MB)</p>
             </>
           )}
 
-          {step === 2 && (
-            <div className="py-12">
-              <div className="w-16 h-16 mx-auto mb-6 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-              <h2 className="mb-2 text-xl font-bold text-gray-800">Subiendo archivo...</h2>
-              <p className="text-sm text-gray-500">Por favor espera mientras procesamos tu contenido.</p>
-              <button onClick={() => setStep(3)} className="mt-8 text-sm font-medium text-blue-600">Siguiente</button>
-            </div>
-          )}
+          {/* Pasos 2-4: Procesamiento */}
+          {(state.step === 'uploading' || state.step === 'extracting' || state.step === 'generating') && (
+            <div className="py-8">
+              {/* Barra de progreso */}
+              <div className="mb-8">
+                <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                    style={{ width: `${state.progress}%` }}
+                  ></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">{state.progress}% completado</p>
+              </div>
 
-          {step === 3 && (
-            <div className="py-12">
-              {/* Fondo con gradiente animado */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-50"></div>
-              
-              <div className="relative">
-                {/* Spinner personalizado */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative w-20 h-20">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-indigo-600 animate-spin"></div>
-                    <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-indigo-600 animate-pulse" />
-                    </div>
+              {/* Spinner */}
+              <div className="flex justify-center mb-8">
+                <div className="relative w-20 h-20">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-indigo-600 animate-spin"></div>
+                  <div className="absolute inset-2 rounded-full bg-white flex items-center justify-center">
+                    <Sparkles className="w-8 h-8 text-indigo-600 animate-pulse" />
                   </div>
                 </div>
-                
-                <h2 className="mb-3 text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Resumen Automático
-                </h2>
-                <p className="text-sm text-gray-600 mb-2">Nuestro sistema de IA está procesando tu archivo</p>
-                
-                {/* Puntos animados */}
-                <div className="flex justify-center gap-1 mt-4">
-                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></span>
-                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
-                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+              </div>
+
+              {/* Mensaje de estado */}
+              <h2 className="text-xl font-bold text-gray-800 text-center mb-2">
+                {state.message}
+              </h2>
+
+              {/* Indicadores de proceso */}
+              <div className="space-y-2 mt-8">
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 40 ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${state.progress >= 40 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${state.progress >= 40 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+                    Extrayendo texto
+                  </span>
                 </div>
-                
-                <p className="text-xs text-gray-400 mt-6">Esto puede tomar algunos segundos...</p>
+
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 70 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${state.progress >= 70 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${state.progress >= 70 ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
+                    Generando resumen con IA
+                  </span>
+                </div>
+
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 100 ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${state.progress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${state.progress >= 100 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+                    Completado
+                  </span>
+                </div>
               </div>
             </div>
           )}
 
-          {step === 4 && (
-            <div className="py-6">
+          {/* Paso 5: Resultado */}
+          {state.step === 'completed' && (
+            <div className="py-8">
               <div className="flex justify-center mb-6">
-                <div className="relative w-16 h-16">
-                  <CheckCircle2 size={64} className="text-green-500 animate-bounce" />
-                </div>
+                <CheckCircle2 size={64} className="text-green-500" />
               </div>
-              <h2 className="mb-2 text-2xl font-bold text-gray-800">¡Resumen Generado!</h2>
-              <p className="mb-8 text-sm text-gray-500">Tu material ha sido procesado correctamente y el resumen está listo.</p>
+
+              <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">Tu Resumen está Listo</h2>
+
+              {/* Caja del resumen */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border border-blue-200 max-h-64 overflow-y-auto">
+                <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-wrap">
+                  {state.summary}
+                </p>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex gap-3">
+                <button 
+                  onClick={onClose}
+                  className="flex-1 py-3 font-bold text-white transition-colors bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700"
+                >
+                  Ver en Detalle
+                </button>
+                <button 
+                  onClick={handleReset}
+                  className="flex-1 py-3 font-bold text-gray-700 transition-colors bg-gray-100 rounded-xl hover:bg-gray-200"
+                >
+                  Procesar Otro
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Error */}
+          {state.step === 'error' && (
+            <div className="py-8">
+              <div className="flex justify-center mb-6">
+                <AlertCircle size={64} className="text-red-500" />
+              </div>
+
+              <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Error al procesar</h2>
+              <p className="text-sm text-red-600 text-center mb-6">{state.error}</p>
+
+              {/* Botón para reintentar */}
               <button 
-                onClick={onClose}
+                onClick={handleReset}
                 className="w-full py-3 font-bold text-white transition-colors bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700"
               >
-                Ver Resumen
+                Intentar Nuevamente
               </button>
             </div>
           )}

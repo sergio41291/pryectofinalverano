@@ -95,4 +95,89 @@ export class OcrWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
       timestamp: new Date(),
     });
   }
+
+  /**
+   * Notify user that file is being extracted
+   */
+  notifyExtracting(userId: string, uploadId: string) {
+    this.server.to(`user:${userId}`).emit('ocr:extracting', {
+      event: 'ocr:extracting',
+      data: {
+        uploadId,
+        message: 'Extrayendo texto del documento...',
+        progress: 50,
+      },
+    });
+
+    this.logger.log(`OCR extracting notification sent to user: ${userId}`);
+  }
+
+  /**
+   * Notify user that summary is being generated
+   */
+  notifyGenerating(userId: string, uploadId: string) {
+    this.server.to(`user:${userId}`).emit('ocr:generating', {
+      event: 'ocr:generating',
+      data: {
+        uploadId,
+        message: 'Generando resumen con IA...',
+        progress: 75,
+      },
+    });
+
+    this.logger.log(`OCR generating notification sent to user: ${userId}`);
+  }
+
+  /**
+   * Notify user that upload started
+   */
+  notifyUploading(userId: string, uploadId: string) {
+    this.server.to(`user:${userId}`).emit('ocr:uploading', {
+      event: 'ocr:uploading',
+      data: {
+        uploadId,
+        message: 'Subiendo archivo...',
+        progress: 30,
+      },
+    });
+
+    this.logger.log(`OCR uploading notification sent to user: ${userId}`);
+  }
+
+  /**
+   * Notify user that process is complete with summary
+   */
+  notifyOcrCompletedWithSummary(userId: string, uploadId: string, ocrResult: any, summary: string) {
+    this.server.to(`user:${userId}`).emit('ocr:completed', {
+      event: 'ocr:completed',
+      data: {
+        uploadId,
+        ocrResultId: ocrResult.id,
+        message: 'Resumen completado',
+        progress: 100,
+        summary,
+        extractedText: ocrResult.extractedText,
+        metadata: ocrResult.metadata,
+        completedAt: ocrResult.completedAt,
+      },
+    });
+
+    this.logger.log(`OCR completed with summary notification sent to user: ${userId}`);
+  }
+
+  /**
+   * Notify error with summary
+   */
+  notifyOcrErrorWithSummary(userId: string, uploadId: string, errorMessage: string) {
+    this.server.to(`user:${userId}`).emit('ocr:error', {
+      event: 'ocr:error',
+      data: {
+        uploadId,
+        error: errorMessage,
+        timestamp: new Date(),
+      },
+    });
+
+    this.logger.log(`OCR error notification sent to user: ${userId}`);
+  }
 }
