@@ -60,7 +60,7 @@ export class MinioClientService {
       );
 
       this.logger.log(`File uploaded: ${bucketName}/${objectName}`);
-      return `${bucketName}/${objectName}`;
+      return objectName; // Return only objectName, not bucketName/objectName
     } catch (error: any) {
       this.logger.error(`Error uploading file: ${error?.message}`, error?.stack);
       throw error;
