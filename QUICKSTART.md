@@ -214,40 +214,74 @@ get mi_clave
 
 ---
 
-## 🐍 Paddle OCR Setup
+## 🐍 OCR con PaddleOCR 3.4.0
 
-### Instalar Python
+**PaddleOCR** es un motor de OCR de nivel industrial que detecta texto en 100+ idiomas, incluyendo español e inglés.
 
-1. **Descargar Python 3.11** desde [python.org](https://www.python.org/)
-2. **Durante la instalación, marcar "Add Python to PATH"**
+### Setup en 3 pasos
 
-### Instalar dependencias
-
-```bash
-# Crear virtual environment (recomendado)
-python -m venv venv
-
-# Activar
-# Windows:
-venv\Scripts\activate
-
-# Linux/Mac:
-source venv/bin/activate
-
-# Instalar dependencias
-pip install paddleocr pillow pdf2image numpy
-
-# Si necesitas convertir PDFs a imágenes:
-# Instalar poppler (Windows):
-# https://github.com/oschwartz10612/poppler-windows/releases/
-```
-
-### Probar OCR
+#### 1️⃣ Instalar PaddleOCR
 
 ```bash
-# Ver si funciona
-python backend/scripts/paddle_ocr_service.py path/to/image.jpg output.json
+# Opción A: Solo OCR básico (recomendado)
+pip install paddleocr
+
+# Opción B: Con todas las características
+pip install "paddleocr[all]"
 ```
+
+#### 2️⃣ Probar con imagen de ejemplo
+
+```bash
+# Crear imagen de prueba (ya creada en credentials/test.jpg)
+python backend/scripts/paddle_ocr_service.py ./credentials/test.jpg ./credentials/output.json
+
+# Ver resultado
+cat credentials/output.json
+```
+
+**Esperado:**
+```json
+{
+  "success": true,
+  "full_text": "Prueba de OCR LearnMind AI 2026",
+  "lines": [...],
+  "statistics": {
+    "total_lines": 3,
+    "average_confidence": 0.95
+  }
+}
+```
+
+#### 3️⃣ Usar en tu código
+
+```python
+from backend.scripts.paddle_ocr_service import PaddleOCRService
+
+# Inicializar
+ocr = PaddleOCRService(lang="es")
+
+# Extraer texto
+result = ocr.extract_text("path/to/image.jpg")
+
+# Resultado
+print(result["full_text"])
+print(result["statistics"])
+```
+
+### Características
+
+✅ Detecta **100+ idiomas** (incluyendo español e inglés)  
+✅ Funciona **offline** (modelos descargados localmente)  
+✅ Retorna **bounding boxes** con coordenadas  
+✅ Calcula **confianza** de cada palabra  
+✅ Detecta **orientación** de texto automáticamente  
+
+### Documentación Oficial
+
+- **GitHub:** [PaddleOCR Repository](https://github.com/PaddlePaddle/PaddleOCR)
+- **Guía oficial:** [PaddleOCR 3.4.0 Docs](https://paddlepaddle.github.io/PaddleOCR/latest/en/)
+- **Demo online:** [PaddleOCR Official Website](https://www.paddleocr.com)
 
 ---
 
