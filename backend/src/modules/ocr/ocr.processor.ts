@@ -138,7 +138,12 @@ export class OcrProcessor {
           'paddle_ocr_service.py',
         );
 
+        // Use the Python from the venv if it exists, otherwise use system Python
+        const pythonExecutable = process.env.PYTHON_EXECUTABLE || 
+          path.join(__dirname, '..', '..', '..', '..', 'venv_ocr', 'Scripts', 'python.exe');
+
         this.logger.log(`Python script path: ${pythonScriptPath}`);
+        this.logger.log(`Python executable: ${pythonExecutable}`);
         this.logger.log(`Input file: ${tempFilePath}`);
         this.logger.log(`Output file: ${tempOutputPath}`);
 
@@ -149,7 +154,7 @@ export class OcrProcessor {
         // El script espera: python script.py <input> <output> [language]
         const args: string[] = [tempFilePath, tempOutputPath, language];
 
-        const pythonProcess = spawn('python', [pythonScriptPath, ...args], {
+        const pythonProcess = spawn(pythonExecutable, [pythonScriptPath, ...args], {
           timeout: 300000, // 5 minutos
         });
 
