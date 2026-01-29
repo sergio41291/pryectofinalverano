@@ -76,7 +76,11 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart }: SummaryModalPr
       // Filter only files with completed OCR processing
       // A file is considered completed if it has extractedText with content
       const completedFiles = (response.data || [])
-        .filter(file => file.extractedText && file.extractedText.trim().length > 0)
+        .filter((file: any) => {
+          const extractedText = file.extractedText as any;
+          const text = extractedText?.text || '';
+          return typeof text === 'string' && text.trim().length > 0;
+        })
         .sort((a, b) => {
           // Sort by creation date, most recent first
           const dateA = new Date(a.createdAt).getTime();

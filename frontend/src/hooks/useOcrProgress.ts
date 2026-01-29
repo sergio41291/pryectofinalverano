@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 export type OcrProgressStep = 'idle' | 'uploading' | 'extracting' | 'generating' | 'completed' | 'error';
 
@@ -27,44 +28,59 @@ export function useOcrProgress() {
     message: '',
     progress: 0
   });
-  const [ws, setWs] = useState<WebSocket | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
-  // Conectar a WebSocket
+  // Conectar a Socket.io
   useEffect(() => {
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ocr`;
-    const socket = new WebSocket(wsUrl);
+    const newSocket = io('http://localhost:3000', {
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5
+    });
 
-    socket.onopen = () => {
-      console.log('OCR WebSocket conectado');
-    };
+    newSocket.on('connect', () => {
+      console.log('Socket.io conectado');
+    });
 
-    socket.onmessage = (event: MessageEvent) => {
-      try {
-        const message: WebSocketMessage = JSON.parse(event.data);
-        handleOcrMessage(message);
-      } catch (err) {
-        console.error('Error al parsear WebSocket message:', err);
-      }
-    };
+    newSocket.on('ocr:uploading', (message: WebSocketMessage) => {
+      handleOcrMessage(message);
+    });
 
-    socket.onerror = (error) => {
-      console.error('WebSocket error:', error);
+    newSocket.on('ocr:extracting', (message: WebSocketMessage) => {
+      handleOcrMessage(message);
+    });
+
+    newSocket.on('ocr:generating', (message: WebSocketMessage) => {
+      handleOcrMessage(message);
+    });
+
+    newSocket.on('ocr:completed', (message: WebSocketMessage) => {
+      handleOcrMessage(message);
+    });
+
+    newSocket.on('ocr:error', (message: WebSocketMessage) => {
+      handleOcrMessage(message);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('Socket.io desconectado');
+    });
+
+    newSocket.on('error', (error) => {
+      console.error('Socket.io error:', error);
       setState(prev => ({
         ...prev,
         step: 'error',
         message: 'Error de conexión',
         error: 'No se pudo conectar al servidor'
       }));
-    };
+    });
 
-    socket.onclose = () => {
-      console.log('OCR WebSocket desconectado');
-    };
-
-    setWs(socket);
+    setSocket(newSocket);
 
     return () => {
-      socket.close();
+      newSocket.close();
     };
   }, []);
 
@@ -130,6 +146,6 @@ export function useOcrProgress() {
   return {
     state,
     reset,
-    ws
+    socket
   };
 }
