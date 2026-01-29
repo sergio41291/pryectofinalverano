@@ -8,6 +8,7 @@ import { SubscriptionsModule } from './modules/subscriptions/subscriptions.modul
 import { UploadsModule } from './modules/uploads/uploads.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { OcrModule } from './modules/ocr/ocr.module';
+import { AiModule } from './modules/ai/ai.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -51,6 +52,7 @@ import { OcrResult } from './modules/ocr/entities/ocr-result.entity';
     StorageModule,
     UploadsModule,
     OcrModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService],

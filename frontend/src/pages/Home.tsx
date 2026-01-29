@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { UploadModal } from '../components/UploadModal';
 import { SummaryModal } from '../components/SummaryModal';
+import { aiService } from '../services/aiService';
 import {
   Upload,
   FileText,
@@ -222,14 +223,26 @@ export function Home() {
           setIsSummaryModalOpen(false);
           setIsGeneratingSummary(true);
           setSummaryError(null);
+          setGeneratedSummary(''); // Reset para streaming
 
           try {
-            // Aquí iría la lógica para generar el resumen con Claude
-            // Por ahora mostramos un placeholder
-            const mockSummary = `📝 Resumen del archivo: ${data.uploadId}\n\nTexto extraído:\n${data.ocrText || '(Sin contenido OCR disponible aún)'}`;
-            setGeneratedSummary(mockSummary);
+            let fullSummary = '';
+            
+            // Usar streaming de Claude API
+            const generator = aiService.streamSummarize({
+              text: data.ocrText || '',
+              language: 'es',
+              style: 'bullet-points',
+              maxTokens: 1024,
+            });
+
+            for await (const chunk of generator) {
+              fullSummary += chunk;
+              setGeneratedSummary(fullSummary);
+            }
           } catch (err) {
             setSummaryError(err instanceof Error ? err.message : 'Error al generar el resumen');
+            console.error('Summary error:', err);
           } finally {
             setIsGeneratingSummary(false);
           }
