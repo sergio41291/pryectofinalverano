@@ -134,7 +134,6 @@ export class OcrProcessor {
           '..',
           '..',
           '..',
-          '..',
           'scripts',
           'paddle_ocr_service.py',
         );
