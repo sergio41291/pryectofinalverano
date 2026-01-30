@@ -456,11 +456,12 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           // Notificar al usuario y dejar que el WebSocket lo actualice
           console.warn('OCR result not yet available, file may still be processing:', err);
           
-          // Mostrar estado de procesamiento
-          setError(null);
-          
-          // El archivo OCR aún está siendo procesado, dejar que el flujo normal lo maneje
-          // El modal mostrará el mensaje de procesamiento desde el padre
+          // Mostrar estado de procesamiento llamando al callback
+          // El padre iniciará el flujo de monitoreo vía WebSocket
+          onSummaryStart?.({
+            uploadId,
+            ocrText: '',
+          });
         }
       }
     } catch (err) {
