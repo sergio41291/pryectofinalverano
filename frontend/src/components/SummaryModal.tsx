@@ -301,7 +301,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
       const isAudio = file.mimeType?.includes('audio');
 
       if (isAudio) {
-        // Para audios, obtener el resultado de audio
+        // Para audios, obtener el resultado de audio del servidor
         const token = localStorage.getItem('authToken');
         const response = await fetch(`${API_CONFIG.apiUrl}/api/audio/${uploadId}`, {
           headers: {
@@ -315,15 +315,125 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
 
         const audioResult = await response.json();
         
-        // Para audios, mostrar el resumen o transcripción
-        if (audioResult.summary) {
-          setAudioSummary(audioResult.summary);
-        }
-        if (audioResult.transcription) {
-          setAudioTranscription(audioResult.transcription);
-        }
-        setAudioProgress(100);
+        // Establecer el archivo subido
         setUploadedFile(file);
+        
+        // Si el audio ya está completado y tiene transcripción
+        if (audioResult.status === 'completed' && audioResult.transcription) {
+          // Mostrar los resultados existentes inmediatamente
+          setAudioTranscription(audioResult.transcription);
+          
+          // Si tiene resumen, mostrarlo; si no, generar uno
+          if (audioResult.summary) {
+            setAudioSummary(audioResult.summary);
+            setAudioProgress(100);
+          } else {
+            // Generar resumen basado en la transcripción existente
+            setAudioProgress(50);
+            setAudioSummary('Generando resumen...');
+            
+            try {
+              const summaryResponse = await fetch(
+                `${API_CONFIG.apiUrl}/api/processing/summarize`,
+                {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                  },
+                  body: JSON.stringify({
+                    text: audioResult.transcription,
+                    style: 'bullet-points',
+                    maxTokens: 1024,
+                  }),
+                }
+              );
+
+              if (summaryResponse.ok) {
+                // Leer el stream de respuesta
+                const reader = summaryResponse.body?.getReader();
+                const decoder = new TextDecoder();
+                let fullSummary = '';
+                
+                if (reader) {
+                  while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    // Parsear líneas SSE
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                      if (line.startsWith('data: ')) {
+                        try {
+                          const data = JSON.parse(line.slice(6));
+                          if (data.content) {
+                            fullSummary += data.content;
+                            setAudioSummary(fullSummary);
+                          }
+                        } catch (e) {
+                          // Ignorar líneas que no sean JSON válido
+                        }
+                      }
+                    }
+                  }
+                }
+                
+                if (!fullSummary) {
+                  setAudioSummary(audioResult.transcription);
+                }
+              } else {
+                // Si falla, usar la transcripción como resumen
+                setAudioSummary(audioResult.transcription);
+              }
+            } catch (err) {
+              // Si falla generar resumen, usar transcripción
+              console.warn('Error generando resumen:', err);
+              setAudioSummary(audioResult.transcription);
+            }
+            
+            setAudioProgress(100);
+          }
+        } else if (audioResult.status === 'processing') {
+          // Si aún está procesando, iniciar polling
+          setAudioProgress(30);
+          setAudioSummary('El audio se encuentra en procesamiento...');
+          
+          // Iniciar polling del status
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusResponse = await fetch(`${API_CONFIG.apiUrl}/api/audio/status/${uploadId}`, {
+                headers: { 'Authorization': `Bearer ${token}` },
+              });
+              
+              if (statusResponse.ok) {
+                const status = await statusResponse.json();
+                
+                if (status.status === 'completed') {
+                  clearInterval(pollInterval);
+                  setAudioTranscription(status.transcription || '');
+                  setAudioSummary(status.summary || status.transcription || '');
+                  setAudioProgress(100);
+                } else if (status.status === 'error') {
+                  clearInterval(pollInterval);
+                  setError(`Error procesando audio: ${status.error}`);
+                  setAudioProgress(0);
+                } else {
+                  setAudioProgress(Math.min(80, (audioProgress || 0) + 10));
+                }
+              }
+            } catch (err) {
+              console.error('Error polling audio status:', err);
+            }
+          }, 3000);
+        } else if (audioResult.status === 'failed') {
+          setError(`Error procesando audio: ${audioResult.errorMessage}`);
+          setAudioProgress(0);
+        } else {
+          // Pendiente o estado desconocido
+          setAudioProgress(20);
+          setAudioSummary('El audio está siendo procesado. Por favor espere...');
+        }
         
       } else {
         // Para OCR, obtener el resultado de OCR como antes
