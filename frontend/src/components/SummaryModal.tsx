@@ -440,16 +440,28 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         
       } else {
         // Para OCR, obtener el resultado de OCR y mostrar en el modal
-        const ocrResult = await ocrService.getOcrResult(uploadId);
-        
         // Cambiar al tab "new" para mostrar los resultados
         setTab('new');
         
-        // Llamar callback para procesar en el padre (que actualiza ocrState)
-        onSummaryStart?.({
-          uploadId,
-          ocrText: ocrResult.rawText || '',
-        });
+        try {
+          const ocrResult = await ocrService.getOcrResult(uploadId);
+          
+          // Si existe el resultado, mostrar en el modal
+          onSummaryStart?.({
+            uploadId,
+            ocrText: ocrResult.rawText || '',
+          });
+        } catch (err: any) {
+          // Si el OcrResult aún no existe, es porque aún está procesando
+          // Notificar al usuario y dejar que el WebSocket lo actualice
+          console.warn('OCR result not yet available, file may still be processing:', err);
+          
+          // Mostrar estado de procesamiento
+          setError(null);
+          
+          // El archivo OCR aún está siendo procesado, dejar que el flujo normal lo maneje
+          // El modal mostrará el mensaje de procesamiento desde el padre
+        }
       }
     } catch (err) {
       setError('Error al obtener el procesamiento del archivo');
