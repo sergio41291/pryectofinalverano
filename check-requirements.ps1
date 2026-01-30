@@ -141,6 +141,18 @@ try {
     Write-Host ""
     
     $TOTAL++
+    python -c "import easyocr" 2>$null
+    if ($?) {
+        Write-Host "✅ EasyOCR instalado" -ForegroundColor Green
+        $OK++
+    }
+    else {
+        Write-Host "❌ EasyOCR NO instalado" -ForegroundColor Red
+        Write-Host "   → Instalar: pip install easyocr" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    
+    $TOTAL++
     python -c "import cv2" 2>$null
     if ($?) {
         Write-Host "✅ OpenCV instalado" -ForegroundColor Green
@@ -150,9 +162,92 @@ try {
         Write-Host "❌ OpenCV NO instalado" -ForegroundColor Red
         Write-Host "   → Instalar: pip install opencv-python" -ForegroundColor Yellow
     }
+    Write-Host ""
+    
+    $TOTAL++
+    python -c "import pdf2image" 2>$null
+    if ($?) {
+        Write-Host "✅ pdf2image instalado" -ForegroundColor Green
+        $OK++
+    }
+    else {
+        Write-Host "❌ pdf2image NO instalado" -ForegroundColor Red
+        Write-Host "   → Instalar: pip install pdf2image" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    
+    $TOTAL++
+    python -c "import pytesseract" 2>$null
+    if ($?) {
+        Write-Host "✅ pytesseract instalado" -ForegroundColor Green
+        $OK++
+    }
+    else {
+        Write-Host "❌ pytesseract NO instalado" -ForegroundColor Red
+        Write-Host "   → Instalar: pip install pytesseract" -ForegroundColor Yellow
+    }
+    Write-Host ""
+    
+    $TOTAL++
+    python -c "import PIL" 2>$null
+    if ($?) {
+        Write-Host "✅ Pillow instalado" -ForegroundColor Green
+        $OK++
+    }
+    else {
+        Write-Host "❌ Pillow NO instalado" -ForegroundColor Red
+        Write-Host "   → Instalar: pip install Pillow" -ForegroundColor Yellow
+    }
+    Write-Host ""
 }
 catch {
     Write-Host "⚠️  Python no disponible" -ForegroundColor Yellow
+}
+
+# HERRAMIENTAS DEL SISTEMA
+Write-Host ""
+Write-Host "🔧 HERRAMIENTAS DEL SISTEMA (OCR)" -ForegroundColor Cyan
+Write-Host "===================================" -ForegroundColor Cyan
+
+# Poppler
+$TOTAL++
+try {
+    $null = & pdfimages -h 2>&1
+    Write-Host "✅ Poppler está instalado" -ForegroundColor Green
+    $OK++
+}
+catch {
+    Write-Host "❌ Poppler NO está instalado" -ForegroundColor Red
+    Write-Host "   → Instalar desde: https://github.com/oschwartz10612/poppler-windows/releases/" -ForegroundColor Yellow
+    Write-Host "   → O con Chocolatey: choco install poppler" -ForegroundColor Yellow
+}
+Write-Host ""
+
+# Tesseract
+$TOTAL++
+try {
+    $null = & tesseract --version 2>&1
+    Write-Host "✅ Tesseract está instalado" -ForegroundColor Green
+    $OK++
+}
+catch {
+    Write-Host "⚠️  Tesseract NO está instalado (opcional)" -ForegroundColor Yellow
+    Write-Host "   → Instalar desde: https://github.com/UB-Mannheim/tesseract/wiki" -ForegroundColor Yellow
+    Write-Host "   → O con Chocolatey: choco install tesseract" -ForegroundColor Yellow
+}
+Write-Host ""
+
+# FFmpeg
+$TOTAL++
+try {
+    $null = & ffmpeg -version 2>&1
+    Write-Host "✅ FFmpeg está instalado" -ForegroundColor Green
+    $OK++
+}
+catch {
+    Write-Host "❌ FFmpeg NO está instalado" -ForegroundColor Red
+    Write-Host "   → Instalar desde: https://ffmpeg.org/download.html" -ForegroundColor Yellow
+    Write-Host "   → O con Chocolatey: choco install ffmpeg" -ForegroundColor Yellow
 }
 Write-Host ""
 

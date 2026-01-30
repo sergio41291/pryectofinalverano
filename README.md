@@ -2,6 +2,37 @@
 
 > Proyecto final de Verano 2025 - MVP con OCR, Autenticación, Dashboard y Tests
 
+## 📋 Requisitos del Sistema (IMPORTANTE)
+
+Antes de instalar, asegúrate de tener:
+
+### Herramientas Obligatorias
+- **Node.js** 16.x+ ([Descargar](https://nodejs.org/))
+- **Python** 3.8+ ([Descargar](https://www.python.org/))
+- **Docker** ([Descargar](https://www.docker.com/))
+- **Poppler** (conversión PDF) - [Guía de instalación](SYSTEM_REQUIREMENTS.md)
+- **FFmpeg** (procesamiento de audio) - [Guía de instalación](SYSTEM_REQUIREMENTS.md)
+
+### Windows Específico
+- **Visual C++ Build Tools** - [Guía de instalación](SYSTEM_REQUIREMENTS.md)
+
+### Instalación Rápida de Dependencias
+
+```powershell
+# Windows (como administrador)
+powershell -ExecutionPolicy Bypass -File install-requirements.ps1
+```
+
+```bash
+# Linux / macOS
+bash install-requirements.sh
+```
+
+**📚 Documentación Completa:**
+- [INSTALLATION_GUIDE.md](INSTALLATION_GUIDE.md) - Guía detallada
+- [SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md) - Requisitos por SO
+- [backend/requirements.txt](backend/requirements.txt) - Dependencias Python
+
 ## 📊 Estado Actual
 
 ```

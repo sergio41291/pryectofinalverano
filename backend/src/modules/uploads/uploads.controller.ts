@@ -13,12 +13,14 @@ import {
   Res,
   ParseIntPipe,
   DefaultValuePipe,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiParam } from '@nestjs/swagger';
 import { Response } from 'express';
 import { UploadsService } from './uploads.service';
 import { OcrService } from '../ocr/ocr.service';
+import { AudioService } from '../audio/audio.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @ApiTags('uploads')
@@ -26,9 +28,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @UseGuards(JwtAuthGuard)
 @Controller('uploads')
 export class UploadsController {
+  private readonly logger = new Logger(UploadsController.name);
+
   constructor(
     private readonly uploadsService: UploadsService,
     private readonly ocrService: OcrService,
+    private readonly audioService: AudioService,
   ) {}
 
   @Post()
@@ -46,21 +51,42 @@ export class UploadsController {
       // Upload file and create upload record
       const upload = await this.uploadsService.createFromFile(req.user.id, file);
 
+      // Detect file type and route to appropriate service
+      const isAudio = this.isAudioFile(file.mimetype);
+      const isImageOrPdf = this.isImageOrPdfFile(file.mimetype);
+
+      this.logger.log(`File uploaded: ${file.originalname}, Type: ${isAudio ? 'AUDIO' : isImageOrPdf ? 'OCR' : 'UNKNOWN'}`);
+
       try {
-        // Automatically create OCR result and queue processing
-        await this.ocrService.initiateOcrProcessing(
-          {
+        if (isAudio) {
+          // Route to Audio Transcription Service
+          this.logger.log(`Routing to Audio Service: ${upload.id}`);
+          await this.audioService.initiateAudioProcessing({
             uploadId: upload.id,
             userId: req.user.id,
             language: 'es',
-          },
-          file.buffer,
-        );
-      } catch (ocrError: any) {
-        // If OCR fails, rollback the upload and delete the file from storage
+          });
+        } else if (isImageOrPdf) {
+          // Route to OCR Service
+          this.logger.log(`Routing to OCR Service: ${upload.id}`);
+          await this.ocrService.initiateOcrProcessing(
+            {
+              uploadId: upload.id,
+              userId: req.user.id,
+              language: 'es',
+            },
+            file.buffer,
+          );
+        } else {
+          throw new BadRequestException(
+            `Unsupported file type: ${file.mimetype}. Supported: Audio (mp3, wav, m4a, ogg) or Document (pdf, image)`,
+          );
+        }
+      } catch (processingError: any) {
+        // If processing fails, rollback the upload and delete the file from storage
         await this.uploadsService.deleteUploadAndFile(upload.id);
         throw new BadRequestException(
-          `OCR processing failed: ${ocrError?.message || 'Unknown error'}. File has been removed.`,
+          `Processing failed: ${processingError?.message || 'Unknown error'}. File has been removed.`,
         );
       }
 
@@ -71,11 +97,52 @@ export class UploadsController {
         fileSize: upload.fileSize,
         mimeType: upload.mimeType,
         status: upload.status,
+        fileType: isAudio ? 'audio' : 'document',
+        processingType: isAudio ? 'transcription' : 'ocr',
         createdAt: upload.createdAt,
       };
     } catch (error: any) {
       throw new BadRequestException(error?.message || 'Failed to upload file');
     }
+  }
+
+  /**
+   * Detect if file is audio format
+   */
+  private isAudioFile(mimeType: string): boolean {
+    const audioMimeTypes = [
+      'audio/mpeg',       // mp3
+      'audio/wav',        // wav
+      'audio/wave',       // wav alternative
+      'audio/x-wav',      // wav alternative
+      'audio/mp4',        // m4a
+      'audio/x-m4a',      // m4a alternative
+      'audio/ogg',        // ogg/opus
+      'audio/opus',       // opus
+      'audio/flac',       // flac
+      'audio/aac',        // aac
+      'audio/x-aac',      // aac alternative
+      'audio/webm',       // webm audio
+    ];
+    return audioMimeTypes.includes(mimeType.toLowerCase());
+  }
+
+  /**
+   * Detect if file is image or PDF (for OCR processing)
+   */
+  private isImageOrPdfFile(mimeType: string): boolean {
+    const ocrMimeTypes = [
+      'application/pdf',          // PDF
+      'image/jpeg',               // JPG
+      'image/jpg',                // JPG alternative
+      'image/png',                // PNG
+      'image/tiff',               // TIFF
+      'image/x-tiff',             // TIFF alternative
+      'image/webp',               // WEBP
+      'image/bmp',                // BMP
+      'image/gif',                // GIF (less common for OCR but supported)
+    ];
+    return ocrMimeTypes.includes(mimeType.toLowerCase());
   }
 
   @Get()

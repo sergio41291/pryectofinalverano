@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { API_CONFIG } from '../config/api';
 
@@ -20,19 +20,62 @@ interface WebSocketMessage {
     progress?: number;
     summary?: string;
     error?: string;
+    chunk?: string;
   };
 }
 
-export function useOcrProgress() {
-  const [state, setState] = useState<OcrProgressState>({
-    step: 'idle',
-    message: '',
-    progress: 0
-  });
-  const [socket, setSocket] = useState<Socket | null>(null);
+// Estado global compartido entre instancias del hook
+let globalSocket: Socket | null = null;
+let globalState: OcrProgressState = {
+  step: 'idle',
+  message: '',
+  progress: 0
+};
+let stateListeners: Set<(state: OcrProgressState) => void> = new Set();
 
-  // Conectar a Socket.io
+const updateGlobalState = (newState: Partial<OcrProgressState>) => {
+  globalState = { ...globalState, ...newState };
+  stateListeners.forEach(listener => listener(globalState));
+};
+
+export function useOcrProgress() {
+  const [state, setState] = useState<OcrProgressState>(globalState);
+  const socketRef = useRef<Socket | null>(null);
+  const isInitializedRef = useRef(false);
+
+  // Conectar a Socket.io (una sola vez globalmente)
   useEffect(() => {
+    if (isInitializedRef.current) {
+      // Ya inicializado, solo suscribirse a cambios
+      const listener = (newState: OcrProgressState) => {
+        setState(newState);
+      };
+      stateListeners.add(listener);
+      setState(globalState);
+
+      return () => {
+        stateListeners.delete(listener);
+      };
+    }
+
+    isInitializedRef.current = true;
+
+    // Si ya hay una conexión global, usarla
+    if (globalSocket && globalSocket.connected) {
+      socketRef.current = globalSocket;
+      setState(globalState);
+
+      const listener = (newState: OcrProgressState) => {
+        setState(newState);
+      };
+      stateListeners.add(listener);
+
+      return () => {
+        stateListeners.delete(listener);
+      };
+    }
+
+    // Crear nueva conexión
     const newSocket = io(API_CONFIG.apiUrl, {
       reconnection: true,
       reconnectionDelay: 1000,
@@ -40,35 +83,69 @@ export function useOcrProgress() {
       reconnectionAttempts: 5
     });
 
-    console.log(`Conectando a Socket.io en: ${API_CONFIG.apiUrl}`);
-
     newSocket.on('connect', () => {
-      console.log('Socket.io conectado exitosamente');
+      const token = localStorage.getItem('authToken');
+      const userId = localStorage.getItem('userId');
+      if (token && userId) {
+        newSocket.emit('authenticate', { token, userId });
+      }
     });
 
-    newSocket.on('ocr:uploading', (message: WebSocketMessage) => {
-      console.log('Evento ocr:uploading recibido');
-      handleOcrMessage(message);
+    newSocket.on('ocr:uploading', (_message: WebSocketMessage) => {
+      updateGlobalState({
+        step: 'uploading',
+        message: 'Subiendo archivo...',
+        progress: 30
+      });
     });
 
-    newSocket.on('ocr:extracting', (message: WebSocketMessage) => {
-      console.log('Evento ocr:extracting recibido');
-      handleOcrMessage(message);
+    newSocket.on('ocr:extracting', (_message: WebSocketMessage) => {
+      updateGlobalState({
+        step: 'extracting',
+        message: 'Extrayendo texto del documento...',
+        progress: 50
+      });
     });
 
-    newSocket.on('ocr:generating', (message: WebSocketMessage) => {
-      console.log('Evento ocr:generating recibido');
-      handleOcrMessage(message);
+    newSocket.on('ocr:generating', (_message: WebSocketMessage) => {
+      updateGlobalState({
+        step: 'generating',
+        message: 'Generando resumen con IA...',
+        progress: 75
+      });
     });
 
-    newSocket.on('ocr:completed', (message: WebSocketMessage) => {
-      console.log('Evento ocr:completed recibido');
-      handleOcrMessage(message);
+    newSocket.on('ocr:summary-chunk', (message: WebSocketMessage) => {
+      // Acumular chunks de resumen
+      const currentSummary = globalState.summary || '';
+      const newChunk = message.data.chunk || '';
+      updateGlobalState({
+        step: 'generating',
+        message: 'Generando resumen con IA...',
+        progress: 75,
+        summary: currentSummary + newChunk
+      });
+    });
+
+    newSocket.on('ocr:completed', (_message: WebSocketMessage) => {
+      updateGlobalState({
+        step: 'completed',
+        message: 'Resumen completado',
+        progress: 100,
+        summary: globalState.summary
+      });
     });
 
     newSocket.on('ocr:error', (message: WebSocketMessage) => {
-      console.log('Evento ocr:error recibido');
-      handleOcrMessage(message);
+      updateGlobalState({
+        step: 'error',
+        message: 'Error al procesar',
+        error: message.data.error || 'Error desconocido'
+      });
+    });
+
+    newSocket.on('authenticated', (_response) => {
+      // Silent - no log needed
     });
 
     newSocket.on('disconnect', () => {
@@ -77,83 +154,40 @@ export function useOcrProgress() {
 
     newSocket.on('error', (error) => {
       console.error('Socket.io error:', error);
-      setState(prev => ({
-        ...prev,
+      updateGlobalState({
         step: 'error',
         message: 'Error de conexión',
         error: 'No se pudo conectar al servidor'
-      }));
+      });
     });
 
-    setSocket(newSocket);
+    globalSocket = newSocket;
+    socketRef.current = newSocket;
+
+    // Suscribirse a cambios de estado
+    const listener = (newState: OcrProgressState) => {
+      setState(newState);
+    };
+    stateListeners.add(listener);
 
     return () => {
-      newSocket.close();
+      stateListeners.delete(listener);
     };
   }, []);
 
-  const handleOcrMessage = useCallback((message: WebSocketMessage) => {
-    const { event, data } = message;
-
-    switch (event) {
-      case 'ocr:uploading':
-        setState({
-          step: 'uploading',
-          message: 'Subiendo archivo...',
-          progress: 30
-        });
-        break;
-
-      case 'ocr:extracting':
-        setState({
-          step: 'extracting',
-          message: 'Extrayendo texto del documento...',
-          progress: 50
-        });
-        break;
-
-      case 'ocr:generating':
-        setState({
-          step: 'generating',
-          message: 'Generando resumen con IA...',
-          progress: 75
-        });
-        break;
-
-      case 'ocr:completed':
-        setState({
-          step: 'completed',
-          message: 'Resumen completado',
-          progress: 100,
-          summary: data.summary
-        });
-        break;
-
-      case 'ocr:error':
-        setState(prev => ({
-          ...prev,
-          step: 'error',
-          message: 'Error al procesar',
-          error: data.error || 'Error desconocido'
-        }));
-        break;
-
-      default:
-        console.warn('Evento OCR desconocido:', event);
-    }
-  }, []);
-
   const reset = useCallback(() => {
-    setState({
+    updateGlobalState({
       step: 'idle',
       message: '',
-      progress: 0
+      progress: 0,
+      summary: undefined,
+      error: undefined
     });
   }, []);
 
   return {
     state,
     reset,
-    socket
+    socket: socketRef.current
   };
 }

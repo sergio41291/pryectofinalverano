@@ -166,6 +166,19 @@ export class OcrWebSocketGateway implements OnGatewayConnection, OnGatewayDiscon
   }
 
   /**
+   * Notify user of a summary chunk (streaming)
+   */
+  notifyResumChunk(userId: string, uploadId: string, chunk: string) {
+    this.server.to(`user:${userId}`).emit('ocr:summary-chunk', {
+      event: 'ocr:summary-chunk',
+      data: {
+        uploadId,
+        chunk,
+      },
+    });
+  }
+
+  /**
    * Notify error with summary
    */
   notifyOcrErrorWithSummary(userId: string, uploadId: string, errorMessage: string) {

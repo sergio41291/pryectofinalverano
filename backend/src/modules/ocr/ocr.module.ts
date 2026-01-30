@@ -9,6 +9,7 @@ import { OcrCacheService } from './ocr-cache.service';
 import { OcrResult } from './entities/ocr-result.entity';
 import { UploadsModule } from '../uploads/uploads.module';
 import { StorageModule } from '../storage/storage.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { StorageModule } from '../storage/storage.module';
     }),
     forwardRef(() => UploadsModule),
     StorageModule,
+    AiModule,
   ],
   providers: [OcrService, OcrProcessor, OcrWebSocketGateway, OcrCacheService],
   controllers: [OcrController],

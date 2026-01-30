@@ -37,8 +37,14 @@ export class Upload {
   @Column({ type: 'varchar', length: 255 })
   minioPath: string;
 
+  @Column({ type: 'bytea', nullable: true, select: false })
+  fileBuffer?: Buffer;
+
   @Column({ type: 'text', nullable: true })
   extractedText?: string;
+
+  @Column({ type: 'text', nullable: true })
+  summary?: string;
 
   @Column({ type: 'text', nullable: true })
   extractedJson?: string;

@@ -47,10 +47,16 @@ export class OcrCacheService {
   }
 
   /**
-   * Save OCR result to cache
+   * Save OCR result to cache (only if successful with non-empty text)
    */
   saveCachedResult(fileHash: string, result: any): void {
     try {
+      // Never cache failed results or empty text
+      if (!result.success || !result.text || result.text.trim().length === 0) {
+        this.logger.debug(`Skipping cache for hash ${fileHash}: result is empty or failed`);
+        return;
+      }
+
       const cachePath = path.join(this.cacheDir, `${fileHash}.json`);
       fs.writeFileSync(cachePath, JSON.stringify(result, null, 2));
       this.logger.log(`Cached OCR result for hash: ${fileHash}`);
@@ -71,6 +77,21 @@ export class OcrCacheService {
       this.logger.log('OCR cache cleared');
     } catch (error: any) {
       this.logger.error(`Error clearing cache: ${error?.message}`);
+    }
+  }
+
+  /**
+   * Clear specific cache entry
+   */
+  clearCacheEntry(fileHash: string): void {
+    try {
+      const cachePath = path.join(this.cacheDir, `${fileHash}.json`);
+      if (fs.existsSync(cachePath)) {
+        fs.unlinkSync(cachePath);
+        this.logger.debug(`Cleared cache entry for hash: ${fileHash}`);
+      }
+    } catch (error: any) {
+      this.logger.error(`Error clearing cache entry: ${error?.message}`);
     }
   }
 

@@ -48,6 +48,16 @@
 ✅ check-requirements.sh           → Verificar requisitos (Linux/Mac)
 ```
 
+### 📋 Installation & Requirements (5 archivos)
+
+```
+✅ SYSTEM_REQUIREMENTS.md          → Requisitos del sistema por SO
+✅ INSTALLATION_GUIDE.md           → Guía de instalación rápida
+✅ install-requirements.ps1        → Script automático (Windows)
+✅ install-requirements.sh         → Script automático (Linux/macOS)
+✅ backend/requirements.txt        → Dependencias Python (OCR/Audio)
+```
+
 ---
 
 ## 📊 RESUMEN DE CONTENIDO

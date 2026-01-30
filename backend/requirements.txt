@@ -1,11 +1,36 @@
-# LearnMind AI - Python Dependencies
-# Para instalar: pip install -r requirements.txt
+# LearnMind AI - Python Dependencies for OCR & Audio Processing
+# Installation: pip install -r requirements.txt
+# 
+# Make sure you have the following system dependencies installed:
+# - Python 3.8+
+# - For Windows: Visual C++ Build Tools
+# - For Linux: Build tools (gcc, g++, make)
+# - For macOS: Xcode Command Line Tools
+# - Poppler (for PDF to image conversion)
+# - FFmpeg (for audio processing)
 
-# OCR Library
+# OCR Libraries
 paddleocr==3.4.0
+easyocr>=1.7.0
+pytesseract>=0.3.10
+pdf2image>=1.16.3
+pdfminer.six>=20230228
+ocrmypdf>=14.0.0
 
-# Imagen
+# Image Processing
 Pillow>=10.0.0
+opencv-python>=4.8.0
 
-# Utilidades
+# Data Processing & Utilities
 numpy>=1.20.0
+pandas>=1.5.0
+
+# API & Async
+requests>=2.31.0
+aiohttp>=3.9.0
+
+# Logging & Error Handling
+python-dotenv>=1.0.0
+
+# Optional: For development
+pytest>=7.0.0

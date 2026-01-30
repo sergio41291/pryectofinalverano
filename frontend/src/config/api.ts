@@ -14,7 +14,7 @@ export const getWebSocketUrl = (): string => {
     return `${protocol}//${window.location.host}`;
   }
   
-  // En desarrollo, usar VITE_WEBSOCKET_URL si está configurado, sino localhost:3000
+  // En desarrollo, usar VITE_WEBSOCKET_URL si está configurado, sino localhost:3001
   const envUrl = import.meta.env.VITE_WEBSOCKET_URL;
   
   if (envUrl) {
@@ -22,7 +22,7 @@ export const getWebSocketUrl = (): string => {
     return envUrl.replace(/^http:/, 'ws:').replace(/^https:/, 'wss:');
   }
   
-  return 'http://localhost:3000';
+  return 'http://localhost:3001';
 };
 
 // Obtener API URL desde import.meta.env o usar valor por defecto
@@ -34,7 +34,7 @@ export const getApiUrl = (): string => {
   }
   
   const envUrl = import.meta.env.VITE_BACKEND_URL;
-  return envUrl || 'http://localhost:3000';
+  return envUrl || 'http://localhost:3001';
 };
 
 // Configuración consolidada

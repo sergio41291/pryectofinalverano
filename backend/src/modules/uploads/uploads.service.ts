@@ -18,29 +18,27 @@ export class UploadsService {
   }
 
   async createFromFile(userId: string, file: Express.Multer.File): Promise<Upload> {
-    // Upload to MinIO
-    const { path, size, mimeType } = await this.storageService.uploadDocument(
-      userId,
-      file,
-      'uploads/',
-    );
-
-    // Create database record
+    // Create database record FIRST (without MinIO upload)
     const upload = this.uploadsRepository.create({
       userId,
       fileName: file.originalname.split('.')[0],
       originalFileName: file.originalname,
-      mimeType,
-      fileSize: size,
-      minioPath: path,
+      mimeType: file.mimetype,
+      fileSize: file.size,
+      minioPath: '', // Will be set after successful OCR
       status: 'pending',
+      fileBuffer: file.buffer, // Store temporarily for OCR processing
     });
 
     return this.uploadsRepository.save(upload);
   }
 
   async findById(id: string): Promise<Upload> {
-    const upload = await this.uploadsRepository.findOne({ where: { id } });
+    const upload = await this.uploadsRepository
+      .createQueryBuilder('upload')
+      .where('upload.id = :id', { id })
+      .addSelect('upload.fileBuffer')
+      .getOne();
 
     if (!upload) {
       throw new NotFoundException(`Upload with ID ${id} not found`);

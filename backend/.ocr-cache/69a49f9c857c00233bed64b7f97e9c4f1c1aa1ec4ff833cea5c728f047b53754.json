@@ -1,0 +1,8 @@
+{
+  "text": "INTRODUCCIÓN\nLa digitalización del sector agropecuario se ha convertido en una necesidad estratégica para\nenpresas\nque\nbuscan\nmantenerse\ncompetitivas\n[ll\nlercado\nconstante\nevolución.\nLa\nAgroveterinaria \"La Fortaleza\nubicada\nMonteagudo. Chuquisaca. ha identificado la urgente\nnecesidad de modemnizar sus procesos operativos mediante la implementación de un sistema web\nIntegral_\nActualmente\nempresa\nopera\nconl\nmétodos\ntradicionales\nque   limitan\neficiencia:\nregistros manuales\ncontrol de inventarios en\npapel y procesos de venta presenciales únicamente.\nEsta situación genera enrores humanos. lentitud operativa y\npérdida de oportunidades comerciales\nespecialmente considerando que atiende\nuna clientela rural dispersa\nrequiere acceso remoto\nproductos y servicios especializados_\nEl sistena web propuesto implementará una arquitectura de tres capas utilizando Laravel -\nInertia\ncon patrón MVC-MVVMy PostgreSQL como base de datos. La solución incluirá gestión\nde\nusuarios.\nproductos\nagropecuarios\nservicios\nveterinarios\ninventarios\nventas\nonline_\npromociones V reportes estadísticos.\ntodo optimizado para las necesidades específicas del sector\nagropecuario boliviano_\nEsta modemnización no solo automatizará los procesos intemnos de La Fortaleza. sino que\ntambién\nmejorará   significativamente la experiencia\ndel\ncliente-\npermitiendo\nacceso\n24 7\nproductos y servicios.\nconsulta de\ndisponibilidad\ntiempo real y múltiples opciones de pago.\nposicionando a la empresa como líder\ntecnológico\nen el sector agropecuario regional\nque",
+  "success": true,
+  "itemCount": 65,
+  "pageCount": 1,
+  "backend": "easyocr",
+  "processingTime": "2026-01-29T19:36:11.908204"
+}

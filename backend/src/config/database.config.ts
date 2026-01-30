@@ -3,6 +3,32 @@ import { User } from '../modules/users/entities/user.entity';
 import { Subscription } from '../modules/subscriptions/entities/subscription.entity';
 import { Upload } from '../modules/uploads/entities/upload.entity';
 
+class SilentLogger {
+  logQuery(query: string) {
+    // Silent - no logs
+  }
+
+  logQueryError(error: string, query: string) {
+    // Only log errors if needed, but suppress for now
+  }
+
+  logQuerySlow(time: number, query: string) {
+    // Silent
+  }
+
+  logSchemaBuild(message: string) {
+    // Silent
+  }
+
+  logMigration(message: string) {
+    // Silent
+  }
+
+  log(level: string, message: any) {
+    // Silent
+  }
+}
+
 export function databaseConfig(): TypeOrmModuleOptions {
   return {
     type: 'postgres',
@@ -13,6 +39,7 @@ export function databaseConfig(): TypeOrmModuleOptions {
     database: process.env.DB_NAME || 'learpmind',
     entities: [User, Subscription, Upload],
     synchronize: process.env.NODE_ENV !== 'production',
-    logging: process.env.NODE_ENV === 'development',
+    logging: false,
+    logger: new SilentLogger(),
   };
 }

@@ -5,7 +5,9 @@ import * as crypto from 'crypto';
 @Injectable()
 export class StorageService {
   private readonly logger = new Logger(StorageService.name);
-  private readonly documentBucket = process.env.MINIO_BUCKET || 'documents';
+  private readonly documentBucket = process.env.MINIO_BUCKET_DOCUMENTS || 'documents';
+  private readonly resultsBucket = process.env.MINIO_BUCKET_RESULTS || 'results';
+  private readonly tempBucket = process.env.MINIO_BUCKET_TEMP || 'temp';
 
   constructor(private readonly minioClientService: MinioClientService) {
     this.initializeBuckets();
@@ -14,6 +16,8 @@ export class StorageService {
   private async initializeBuckets(): Promise<void> {
     try {
       await this.minioClientService.ensureBucketExists(this.documentBucket);
+      await this.minioClientService.ensureBucketExists(this.resultsBucket);
+      await this.minioClientService.ensureBucketExists(this.tempBucket);
       this.logger.log('Storage buckets initialized');
     } catch (error: any) {
       this.logger.error('Failed to initialize storage buckets', error?.stack);
@@ -81,6 +85,105 @@ export class StorageService {
     } catch (error: any) {
       this.logger.error(`Error uploading document: ${error?.message}`, error?.stack);
       throw new BadRequestException('Failed to upload document');
+    }
+  }
+
+  async uploadSummary(userId: string, uploadId: string, summaryText: string, type: string = 'summary'): Promise<string> {
+    try {
+      let objectName: string;
+      let fileName: string;
+
+      if (type === 'transcription') {
+        fileName = `${uploadId}-transcription.txt`;
+        objectName = `audio/transcriptions/${userId}/${fileName}`;
+      } else if (type === 'summary') {
+        fileName = `${uploadId}-summary.txt`;
+        objectName = `summaries/${userId}/${fileName}`;
+      } else {
+        fileName = `${uploadId}-${type}.txt`;
+        objectName = `${type}/${userId}/${fileName}`;
+      }
+
+      const path = await this.minioClientService.uploadFile(
+        this.resultsBucket,
+        objectName,
+        Buffer.from(summaryText, 'utf-8'),
+        'text/plain',
+      );
+
+      this.logger.log(`${type === 'transcription' ? 'Transcription' : 'Summary'} uploaded: ${path} (${summaryText.length} bytes)`);
+      return path;
+    } catch (error: any) {
+      this.logger.error(`Error uploading ${type}: ${error?.message}`, error?.stack);
+      throw error;
+    }
+  }
+
+  async uploadAudioFile(userId: string, uploadId: string, fileBuffer: Buffer, fileName: string): Promise<string> {
+    try {
+      const audioFileName = `${uploadId}-${fileName}`;
+      const objectName = `audio/files/${userId}/${audioFileName}`;
+
+      const path = await this.minioClientService.uploadFile(
+        this.resultsBucket,
+        objectName,
+        fileBuffer,
+        'audio/wav',
+      );
+
+      this.logger.log(`Audio file uploaded: ${path} (${fileBuffer.length} bytes)`);
+      return path;
+    } catch (error: any) {
+      this.logger.error(`Error uploading audio file: ${error?.message}`, error?.stack);
+      throw error;
+    }
+  }
+
+  async uploadOcrResult(userId: string, uploadId: string, ocrText: string): Promise<string> {
+    try {
+      const ocrFileName = `${uploadId}-ocr.txt`;
+      const objectName = `ocr/${userId}/${ocrFileName}`;
+
+      const path = await this.minioClientService.uploadFile(
+        this.resultsBucket,
+        objectName,
+        Buffer.from(ocrText, 'utf-8'),
+        'text/plain',
+      );
+
+      this.logger.log(`OCR result uploaded: ${path} (${ocrText.length} bytes)`);
+      return path;
+    } catch (error: any) {
+      this.logger.error(`Error uploading OCR result: ${error?.message}`, error?.stack);
+      throw error;
+    }
+  }
+
+  async moveToTemp(sourcePath: string, fileName: string): Promise<string> {
+    try {
+      // Download from documents bucket
+      const buffer = await this.minioClientService.downloadFile(
+        this.documentBucket,
+        sourcePath,
+      );
+
+      // Upload to temp bucket
+      const tempObjectName = `failed/${fileName}-${Date.now()}`;
+      const path = await this.minioClientService.uploadFile(
+        this.tempBucket,
+        tempObjectName,
+        buffer,
+        'application/octet-stream',
+      );
+
+      // Delete from documents bucket
+      await this.minioClientService.deleteFile(this.documentBucket, sourcePath);
+
+      this.logger.log(`File moved to temp: ${path}`);
+      return path;
+    } catch (error: any) {
+      this.logger.error(`Error moving file to temp: ${error?.message}`, error?.stack);
+      throw error;
     }
   }
 

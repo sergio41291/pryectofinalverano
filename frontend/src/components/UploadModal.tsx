@@ -1,9 +1,16 @@
 import { X, Upload, File, CheckCircle2, Sparkles, AlertCircle } from 'lucide-react';
-import { useOcrProgress } from '../hooks/useOcrProgress';
 import { useRef } from 'react';
+import { API_CONFIG } from '../config/api';
+import type { OcrProgressState } from '../hooks/useOcrProgress';
 
-export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () => void }) {
-  const { state, reset } = useOcrProgress();
+interface UploadModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  ocrState: OcrProgressState;
+  ocrReset: () => void;
+}
+
+export function UploadModal({ isOpen, onClose, ocrState, ocrReset }: UploadModalProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (file: File) => {
@@ -13,9 +20,13 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
     formData.append('file', file);
 
     try {
-      const response = await fetch('/api/uploads/upload', {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(`${API_CONFIG.apiUrl}/api/uploads`, {
         method: 'POST',
         body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
       });
 
       if (!response.ok) {
@@ -29,7 +40,7 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
   };
 
   const handleReset = () => {
-    reset();
+    ocrReset();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -50,7 +61,7 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
 
         <div className="p-8">
           {/* Paso 1: Seleccionar archivo */}
-          {state.step === 'idle' && (
+          {ocrState.step === 'idle' && (
             <>
               <div className="text-center">
                 <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 text-blue-600 rounded-full bg-blue-50">
@@ -80,17 +91,17 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
           )}
 
           {/* Pasos 2-4: Procesamiento */}
-          {(state.step === 'uploading' || state.step === 'extracting' || state.step === 'generating') && (
+          {(ocrState.step === 'uploading' || ocrState.step === 'extracting' || ocrState.step === 'generating') && (
             <div className="py-8">
               {/* Barra de progreso */}
               <div className="mb-8">
                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-                    style={{ width: `${state.progress}%` }}
+                    style={{ width: `${ocrState.progress}%` }}
                   ></div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">{state.progress}% completado</p>
+                <p className="text-xs text-gray-500 mt-2">{ocrState.progress}% completado</p>
               </div>
 
               {/* Spinner */}
@@ -105,28 +116,28 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
 
               {/* Mensaje de estado */}
               <h2 className="text-xl font-bold text-gray-800 text-center mb-2">
-                {state.message}
+                {ocrState.message}
               </h2>
 
               {/* Indicadores de proceso */}
               <div className="space-y-2 mt-8">
-                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 40 ? 'bg-green-50' : 'bg-gray-50'}`}>
-                  <div className={`w-2 h-2 rounded-full ${state.progress >= 40 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  <span className={`text-sm ${state.progress >= 40 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${ocrState.progress >= 40 ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${ocrState.progress >= 40 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${ocrState.progress >= 40 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
                     Extrayendo texto
                   </span>
                 </div>
 
-                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 70 ? 'bg-blue-50' : 'bg-gray-50'}`}>
-                  <div className={`w-2 h-2 rounded-full ${state.progress >= 70 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                  <span className={`text-sm ${state.progress >= 70 ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${ocrState.progress >= 70 ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${ocrState.progress >= 70 ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${ocrState.progress >= 70 ? 'text-blue-700 font-medium' : 'text-gray-500'}`}>
                     Generando resumen con IA
                   </span>
                 </div>
 
-                <div className={`flex items-center gap-3 p-3 rounded-lg ${state.progress >= 100 ? 'bg-green-50' : 'bg-gray-50'}`}>
-                  <div className={`w-2 h-2 rounded-full ${state.progress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                  <span className={`text-sm ${state.progress >= 100 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
+                <div className={`flex items-center gap-3 p-3 rounded-lg ${ocrState.progress >= 100 ? 'bg-green-50' : 'bg-gray-50'}`}>
+                  <div className={`w-2 h-2 rounded-full ${ocrState.progress >= 100 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  <span className={`text-sm ${ocrState.progress >= 100 ? 'text-green-700 font-medium' : 'text-gray-500'}`}>
                     Completado
                   </span>
                 </div>
@@ -135,7 +146,7 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
           )}
 
           {/* Paso 5: Resultado */}
-          {state.step === 'completed' && (
+          {ocrState.step === 'completed' && (
             <div className="py-8">
               <div className="flex justify-center mb-6">
                 <CheckCircle2 size={64} className="text-green-500" />
@@ -146,7 +157,7 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
               {/* Caja del resumen */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 mb-6 border border-blue-200 max-h-64 overflow-y-auto">
                 <p className="text-gray-700 leading-relaxed text-sm whitespace-pre-wrap">
-                  {state.summary}
+                  {ocrState.summary}
                 </p>
               </div>
 
@@ -169,14 +180,14 @@ export function UploadModal({ isOpen, onClose }: { isOpen: boolean, onClose: () 
           )}
 
           {/* Error */}
-          {state.step === 'error' && (
+          {ocrState.step === 'error' && (
             <div className="py-8">
               <div className="flex justify-center mb-6">
                 <AlertCircle size={64} className="text-red-500" />
               </div>
 
               <h2 className="text-2xl font-bold text-gray-800 text-center mb-2">Error al procesar</h2>
-              <p className="text-sm text-red-600 text-center mb-6">{state.error}</p>
+              <p className="text-sm text-red-600 text-center mb-6">{ocrState.error}</p>
 
               {/* Botón para reintentar */}
               <button 

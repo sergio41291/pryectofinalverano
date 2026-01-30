@@ -231,4 +231,82 @@ export const API_CONFIG = {
 
 ---
 
+## 📦 Configuración MinIO - Estructura de Buckets
+
+### Variables de Entorno (`.env`)
+
+```env
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_ROOT_USER=minioadmin
+MINIO_ROOT_PASSWORD=minioadmin123
+MINIO_BUCKET_DOCUMENTS=documents    # Archivos originales que suben usuarios
+MINIO_BUCKET_RESULTS=results        # OCR extraído + resúmenes generados
+MINIO_BUCKET_TEMP=temp              # Archivos fallidos (auditoría)
+MINIO_USE_SSL=false
+MINIO_ACCESS_KEY=minioadmin
+MINIO_SECRET_KEY=minioadmin123
+```
+
+### Estructura de Buckets
+
+```
+MinIO (S3-compatible storage)
+│
+├── documents/                   (Archivos PDF que suben usuarios)
+│   ├── user-id-1/
+│   │   ├── timestamp-random-filename.pdf
+│   │   └── timestamp-random-filename.pdf
+│   └── user-id-2/
+│       └── timestamp-random-filename.pdf
+│
+├── results/                     (OCR extraído + Resúmenes)
+│   ├── ocr/                     (Texto extraído por OCR)
+│   │   ├── user-id-1/
+│   │   │   ├── uploadId-ocr.txt
+│   │   │   └── uploadId-ocr.txt
+│   │   └── user-id-2/
+│   │       └── uploadId-ocr.txt
+│   │
+│   └── summaries/               (Resúmenes generados con Claude)
+│       ├── user-id-1/
+│       │   ├── uploadId-summary.txt
+│       │   └── uploadId-summary.txt
+│       └── user-id-2/
+│           └── uploadId-summary.txt
+│
+└── temp/                        (Archivos que fallaron en OCR)
+    ├── failed/
+    │   ├── filename-timestamp.pdf
+    │   ├── filename-timestamp.pdf
+    │   └── filename-timestamp.pdf
+```
+
+### Acceso a MinIO
+
+- **UI Web**: http://localhost:9000
+  - Usuario: `minioadmin`
+  - Contraseña: `minioadmin123`
+- **API**: http://localhost:9000
+- **SDK Node.js**: `import * as Minio from 'minio'`
+
+### Flujo de Datos
+
+```
+1. Usuario sube PDF
+   → Se guarda en: documents/user-id/timestamp-file.pdf
+
+2. Backend procesa OCR
+   → OCR extraído se guarda en: results/ocr/user-id/uploadId-ocr.txt
+   → Si falla: documento se mueve a: temp/failed/filename-timestamp.pdf
+
+3. Backend genera resumen con Claude
+   → Resumen se guarda en: results/summaries/user-id/uploadId-summary.txt
+   → Usuario puede descargar desde aquí
+
+4. Limpieza (manual)
+   → Ver CLEANUP_README.md para instrucciones
+```
+
+---
+
 **✨ Las URLs ahora son dinámicas y fáciles de cambiar sin tocar código!**
