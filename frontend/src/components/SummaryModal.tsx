@@ -446,10 +446,20 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         try {
           const ocrResult = await ocrService.getOcrResult(uploadId);
           
+          // Extraer el texto según la estructura del resultado
+          let extractedTextValue = '';
+          if (typeof ocrResult.extractedText === 'string') {
+            extractedTextValue = ocrResult.extractedText;
+          } else if (ocrResult.extractedText && typeof ocrResult.extractedText === 'object') {
+            extractedTextValue = (ocrResult.extractedText as any).text || '';
+          } else if (ocrResult.rawText) {
+            extractedTextValue = ocrResult.rawText;
+          }
+          
           // Si existe el resultado, mostrar en el modal
           onSummaryStart?.({
             uploadId,
-            ocrText: ocrResult.rawText || '',
+            ocrText: extractedTextValue,
           });
         } catch (err: any) {
           // Si el OcrResult aún no existe, es porque aún está procesando

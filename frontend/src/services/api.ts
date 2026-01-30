@@ -60,10 +60,22 @@ export interface Upload {
 export interface OcrResult {
   id: string;
   uploadId: string;
-  rawText: string;
-  confidence: number;
-  language: string;
-  processedAt: string;
+  status: string;
+  extractedText?: {
+    text: string;
+    confidence?: number;
+    language?: string;
+    summary?: string;
+  } | string;
+  rawText?: string;
+  confidence?: number;
+  language?: string;
+  processedAt?: string;
+  metadata?: Record<string, any>;
+  pageResults?: any[];
+  errorMessage?: string;
+  createdAt?: string;
+  completedAt?: string;
 }
 
 // Auth Service

@@ -10,15 +10,29 @@ interface OCRResultsProps {
 export function OCRResults({ result, fileName }: OCRResultsProps) {
   const [copied, setCopied] = useState(false);
 
+  // Extraer el texto según la estructura
+  const getRawText = () => {
+    if (typeof result.extractedText === 'string') {
+      return result.extractedText;
+    } else if (result.extractedText && typeof result.extractedText === 'object') {
+      return (result.extractedText as any).text || result.rawText || '';
+    }
+    return result.rawText || '';
+  };
+
+  const rawText = getRawText();
+  const confidence = (result as any).extractedText?.confidence || result.confidence || 0.95;
+  const language = (result as any).extractedText?.language || result.language || 'es';
+
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(result.rawText);
+    navigator.clipboard.writeText(rawText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const downloadAsText = () => {
     const element = document.createElement('a');
-    const file = new Blob([result.rawText], { type: 'text/plain' });
+    const file = new Blob([rawText], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = `${fileName.split('.')[0]}_ocr.txt`;
     document.body.appendChild(element);
@@ -36,7 +50,7 @@ export function OCRResults({ result, fileName }: OCRResultsProps) {
           <div>
             <h3 className="font-semibold text-gray-900">{fileName}</h3>
             <p className="text-sm text-gray-500">
-              Confianza: {(result.confidence * 100).toFixed(1)}% • Idioma: {result.language}
+              Confianza: {(confidence * 100).toFixed(1)}% • Idioma: {language}
             </p>
           </div>
         </div>
@@ -44,7 +58,7 @@ export function OCRResults({ result, fileName }: OCRResultsProps) {
 
       <div className="mb-4 p-4 bg-gray-50 rounded-lg max-h-96 overflow-y-auto">
         <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
-          {result.rawText}
+          {rawText}
         </p>
       </div>
 
@@ -66,7 +80,7 @@ export function OCRResults({ result, fileName }: OCRResultsProps) {
       </div>
 
       <div className="mt-4 text-xs text-gray-500">
-        Procesado: {new Date(result.processedAt).toLocaleString('es-ES')}
+        Procesado: {result.processedAt || result.completedAt ? new Date(result.processedAt || result.completedAt || '').toLocaleString('es-ES') : 'N/A'}
       </div>
     </div>
   );
