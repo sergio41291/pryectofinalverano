@@ -66,7 +66,7 @@ export class AudioController {
   }
 
   @Get(':uploadId')
-  async getAudioResult(
+  async getAudioFullResult(
     @Param('uploadId') uploadId: string,
     @Request() req: any,
   ): Promise<AudioResult> {

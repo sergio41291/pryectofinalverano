@@ -72,6 +72,11 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
   const [audioTranscription, setAudioTranscription] = useState<string>('');
   const [audioSummary, setAudioSummary] = useState<string>('');
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  
+  // Para paginación de archivos
+  const [audioFilesPage, setAudioFilesPage] = useState(1);
+  const [otherFilesPage, setOtherFilesPage] = useState(1);
+  const ITEMS_PER_PAGE = 6;
 
   // Usar estado global de OCR si está disponible
   const ocrProgress = ocrState || {
@@ -151,13 +156,21 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
       setIsLoadingFiles(true);
       const response = await uploadService.listUploads(1, 100); // Get more files to ensure we have completed ones
       
-      // Filter only files with completed OCR processing
-      // A file is considered completed if it has extractedText with content
+      // Filter only files with completed processing (OCR or Audio)
+      // A file is considered completed if:
+      // - For OCR: has extractedText with content
+      // - For Audio: status is 'completed' or has transcription/summary
       const completedFiles = (response.data || [])
         .filter((file: any) => {
+          // Check for OCR completed files
           const extractedText = file.extractedText as any;
-          const text = extractedText?.text || '';
-          return typeof text === 'string' && text.trim().length > 0;
+          const ocrText = extractedText?.text || '';
+          const hasOcrContent = typeof ocrText === 'string' && ocrText.trim().length > 0;
+          
+          // Check for Audio completed files
+          const isAudioCompleted = file.status === 'completed' || (file.mimeType && file.mimeType.includes('audio'));
+          
+          return hasOcrContent || isAudioCompleted;
         })
         .sort((a, b) => {
           // Sort by creation date, most recent first
@@ -276,12 +289,51 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
     setError(null);
 
     try {
-      const ocrResult = await ocrService.getOcrResult(uploadId);
-      onSummaryStart?.({
-        uploadId,
-        ocrText: ocrResult.rawText || '',
-      });
-      onClose();
+      // Encontrar el archivo en existingFiles para saber su tipo
+      const file = existingFiles.find(f => f.id === uploadId);
+      
+      if (!file) {
+        setError('Archivo no encontrado');
+        setProcessingExisting(false);
+        return;
+      }
+
+      const isAudio = file.mimeType?.includes('audio');
+
+      if (isAudio) {
+        // Para audios, obtener el resultado de audio
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${API_CONFIG.apiUrl}/api/audio/${uploadId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al obtener el resultado de audio');
+        }
+
+        const audioResult = await response.json();
+        
+        // Para audios, mostrar el resumen o transcripción
+        if (audioResult.summary) {
+          setAudioSummary(audioResult.summary);
+        }
+        if (audioResult.transcription) {
+          setAudioTranscription(audioResult.transcription);
+        }
+        setAudioProgress(100);
+        setUploadedFile(file);
+        
+      } else {
+        // Para OCR, obtener el resultado de OCR como antes
+        const ocrResult = await ocrService.getOcrResult(uploadId);
+        onSummaryStart?.({
+          uploadId,
+          ocrText: ocrResult.rawText || '',
+        });
+        onClose();
+      }
     } catch (err) {
       setError('Error al obtener el procesamiento del archivo');
       console.error(err);
@@ -296,23 +348,23 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
     <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
       <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose}></div>
 
-      <div className="relative w-full max-w-2xl bg-white shadow-2xl rounded-3xl overflow-hidden">
+      <div className="relative w-full max-w-5xl bg-white shadow-2xl rounded-3xl overflow-hidden max-h-[90vh] flex flex-col">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 z-10"
+          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 z-10"
         >
           <X size={24} />
         </button>
 
-        <div className="p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Resumen Automático</h2>
-          <p className="text-gray-600 mb-6">Sube un nuevo archivo o selecciona uno que ya hayas procesado</p>
+        <div className="p-8 pb-6 flex-shrink-0">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Resumen Automático</h2>
+          <p className="text-gray-600 mb-8">Sube un nuevo archivo o selecciona uno que ya hayas procesado</p>
 
           {/* Pestañas */}
-          <div className="flex gap-2 mb-6 border-b border-gray-200">
+          <div className="flex gap-4 mb-8 border-b border-gray-200">
             <button
               onClick={() => setTab('new')}
-              className={`px-4 py-3 font-medium transition-colors ${
+              className={`px-6 py-3 font-medium text-lg transition-colors ${
                 tab === 'new'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -322,7 +374,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
             </button>
             <button
               onClick={() => setTab('existing')}
-              className={`px-4 py-3 font-medium transition-colors ${
+              className={`px-6 py-3 font-medium text-lg transition-colors ${
                 tab === 'existing'
                   ? 'text-blue-600 border-b-2 border-blue-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -331,7 +383,10 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
               📂 Archivos Existentes
             </button>
           </div>
+        </div>
 
+        {/* Contenido scrolleable */}
+        <div className="px-8 pb-8 overflow-y-auto flex-1">
           {error && (
             <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg flex items-center gap-2">
               <AlertCircle size={20} />
@@ -666,7 +721,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
               ) : existingFiles.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="mx-auto text-gray-400 mb-4" size={48} />
-                  <p className="text-gray-600">No tienes archivos subidos aún</p>
+                  <p className="text-gray-600">No tienes archivos procesados aún</p>
                   <button
                     onClick={() => setTab('new')}
                     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -675,55 +730,202 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
                   </button>
                 </div>
               ) : (
-                <div className="overflow-x-auto border border-gray-200 rounded-lg">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-100 border-b border-gray-200">
-                      <tr>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Nombre del archivo</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Tipo</th>
-                        <th className="px-4 py-3 text-left font-semibold text-gray-700">Fecha de carga</th>
-                        <th className="px-4 py-3 text-right font-semibold text-gray-700">Tamaño</th>
-                        <th className="px-4 py-3 text-center font-semibold text-gray-700">Acción</th>
-                      </tr>
-                    </thead>
-                    <tbody className="max-h-96 overflow-y-auto block">
-                      {existingFiles.map((file, index) => (
-                        <tr
-                          key={file.id}
-                          className={`border-b border-gray-200 hover:bg-blue-50 transition-colors cursor-pointer ${
-                            index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                          }`}
-                        >
-                          <td className="px-4 py-3 font-medium text-gray-900 truncate max-w-xs">
-                            {file.originalFileName || file.fileName}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {getFileTypeLabel(file.mimeType || 'application/octet-stream')}
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {formatDate(file.createdAt)}
-                          </td>
-                          <td className="px-4 py-3 text-right text-gray-600">
-                            {formatFileSize(file.fileSize || 0)}
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => handleSelectExisting(file.id)}
-                              disabled={processingExisting}
-                              className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {processingExisting ? (
-                                <Loader size={16} className="animate-spin" />
-                              ) : (
-                                <FileText size={16} />
-                              )}
-                              Usar
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-6">
+                  {/* Separar por tipo de archivo */}
+                  {(() => {
+                    const audioFiles = existingFiles.filter(f => f.mimeType?.includes('audio'));
+                    const otherFiles = existingFiles.filter(f => !f.mimeType?.includes('audio'));
+                    
+                    // Paginación para audio
+                    const audioStart = (audioFilesPage - 1) * ITEMS_PER_PAGE;
+                    const audioEnd = audioStart + ITEMS_PER_PAGE;
+                    const paginatedAudioFiles = audioFiles.slice(audioStart, audioEnd);
+                    const audioTotalPages = Math.ceil(audioFiles.length / ITEMS_PER_PAGE);
+                    
+                    // Paginación para otros
+                    const otherStart = (otherFilesPage - 1) * ITEMS_PER_PAGE;
+                    const otherEnd = otherStart + ITEMS_PER_PAGE;
+                    const paginatedOtherFiles = otherFiles.slice(otherStart, otherEnd);
+                    const otherTotalPages = Math.ceil(otherFiles.length / ITEMS_PER_PAGE);
+
+                    return (
+                      <>
+                        {/* Audio Files Section */}
+                        {audioFiles.length > 0 && (
+                          <div className="border border-purple-200 rounded-lg bg-purple-50">
+                            <div className="bg-purple-100 px-4 py-3 border-b border-purple-200 flex items-center gap-2">
+                              <Music size={20} className="text-purple-600" />
+                              <h3 className="font-semibold text-purple-900">Archivos de Audio ({audioFiles.length})</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead className="bg-purple-50 border-b border-purple-200">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left font-semibold text-purple-700">Nombre</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-purple-700">Tipo</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-purple-700">Fecha</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-purple-700">Tamaño</th>
+                                    <th className="px-4 py-3 text-center font-semibold text-purple-700">Acción</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {paginatedAudioFiles.map((file, index) => (
+                                    <tr
+                                      key={file.id}
+                                      className={`border-b border-purple-200 hover:bg-purple-100 transition-colors ${
+                                        index % 2 === 0 ? 'bg-white' : 'bg-purple-50'
+                                      }`}
+                                    >
+                                      <td className="px-4 py-3 font-medium text-gray-900 truncate max-w-xs flex items-center gap-2">
+                                        <Music size={16} className="text-purple-600 flex-shrink-0" />
+                                        {file.originalFileName || file.fileName}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-600">
+                                        {getFileTypeLabel(file.mimeType || 'audio')}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-600 text-xs">
+                                        {formatDate(file.createdAt)}
+                                      </td>
+                                      <td className="px-4 py-3 text-right text-gray-600">
+                                        {formatFileSize(file.fileSize || 0)}
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <button
+                                          onClick={() => handleSelectExisting(file.id)}
+                                          disabled={processingExisting}
+                                          className="inline-flex items-center gap-2 px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                                        >
+                                          {processingExisting ? (
+                                            <Loader size={14} className="animate-spin" />
+                                          ) : (
+                                            <Download size={14} />
+                                          )}
+                                          Usar
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            {/* Paginación de audio */}
+                            {audioTotalPages > 1 && (
+                              <div className="px-4 py-3 bg-purple-100 border-t border-purple-200 flex items-center justify-between">
+                                <span className="text-sm text-purple-700">
+                                  Página {audioFilesPage} de {audioTotalPages}
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setAudioFilesPage(p => Math.max(1, p - 1))}
+                                    disabled={audioFilesPage === 1}
+                                    className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
+                                  >
+                                    ← Anterior
+                                  </button>
+                                  <button
+                                    onClick={() => setAudioFilesPage(p => Math.min(audioTotalPages, p + 1))}
+                                    disabled={audioFilesPage === audioTotalPages}
+                                    className="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 disabled:bg-gray-400 transition-colors"
+                                  >
+                                    Siguiente →
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Other Files Section */}
+                        {otherFiles.length > 0 && (
+                          <div className="border border-blue-200 rounded-lg bg-blue-50">
+                            <div className="bg-blue-100 px-4 py-3 border-b border-blue-200 flex items-center gap-2">
+                              <FileText size={20} className="text-blue-600" />
+                              <h3 className="font-semibold text-blue-900">Otros Archivos ({otherFiles.length})</h3>
+                            </div>
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm">
+                                <thead className="bg-blue-50 border-b border-blue-200">
+                                  <tr>
+                                    <th className="px-4 py-3 text-left font-semibold text-blue-700">Nombre</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-blue-700">Tipo</th>
+                                    <th className="px-4 py-3 text-left font-semibold text-blue-700">Fecha</th>
+                                    <th className="px-4 py-3 text-right font-semibold text-blue-700">Tamaño</th>
+                                    <th className="px-4 py-3 text-center font-semibold text-blue-700">Acción</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {paginatedOtherFiles.map((file, index) => (
+                                    <tr
+                                      key={file.id}
+                                      className={`border-b border-blue-200 hover:bg-blue-100 transition-colors ${
+                                        index % 2 === 0 ? 'bg-white' : 'bg-blue-50'
+                                      }`}
+                                    >
+                                      <td className="px-4 py-3 font-medium text-gray-900 truncate max-w-xs flex items-center gap-2">
+                                        {file.mimeType?.includes('image') ? (
+                                          <Image size={16} className="text-blue-600 flex-shrink-0" />
+                                        ) : (
+                                          <FileText size={16} className="text-blue-600 flex-shrink-0" />
+                                        )}
+                                        {file.originalFileName || file.fileName}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-600">
+                                        {getFileTypeLabel(file.mimeType || 'application/octet-stream')}
+                                      </td>
+                                      <td className="px-4 py-3 text-gray-600 text-xs">
+                                        {formatDate(file.createdAt)}
+                                      </td>
+                                      <td className="px-4 py-3 text-right text-gray-600">
+                                        {formatFileSize(file.fileSize || 0)}
+                                      </td>
+                                      <td className="px-4 py-3 text-center">
+                                        <button
+                                          onClick={() => handleSelectExisting(file.id)}
+                                          disabled={processingExisting}
+                                          className="inline-flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                                        >
+                                          {processingExisting ? (
+                                            <Loader size={14} className="animate-spin" />
+                                          ) : (
+                                            <Download size={14} />
+                                          )}
+                                          Usar
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                            {/* Paginación de otros archivos */}
+                            {otherTotalPages > 1 && (
+                              <div className="px-4 py-3 bg-blue-100 border-t border-blue-200 flex items-center justify-between">
+                                <span className="text-sm text-blue-700">
+                                  Página {otherFilesPage} de {otherTotalPages}
+                                </span>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => setOtherFilesPage(p => Math.max(1, p - 1))}
+                                    disabled={otherFilesPage === 1}
+                                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                                  >
+                                    ← Anterior
+                                  </button>
+                                  <button
+                                    onClick={() => setOtherFilesPage(p => Math.min(otherTotalPages, p + 1))}
+                                    disabled={otherFilesPage === otherTotalPages}
+                                    className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
+                                  >
+                                    Siguiente →
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
