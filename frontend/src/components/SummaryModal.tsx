@@ -439,13 +439,17 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         }
         
       } else {
-        // Para OCR, obtener el resultado de OCR como antes
+        // Para OCR, obtener el resultado de OCR y mostrar en el modal
         const ocrResult = await ocrService.getOcrResult(uploadId);
+        
+        // Cambiar al tab "new" para mostrar los resultados
+        setTab('new');
+        
+        // Llamar callback para procesar en el padre (que actualiza ocrState)
         onSummaryStart?.({
           uploadId,
           ocrText: ocrResult.rawText || '',
         });
-        onClose();
       }
     } catch (err) {
       setError('Error al obtener el procesamiento del archivo');
