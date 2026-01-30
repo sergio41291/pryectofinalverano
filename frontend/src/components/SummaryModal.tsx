@@ -318,6 +318,9 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         // Establecer el archivo subido
         setUploadedFile(file);
         
+        // Cambiar al tab "new" para mostrar los resultados
+        setTab('new');
+        
         // Si el audio ya está completado y tiene transcripción
         if (audioResult.status === 'completed' && audioResult.transcription) {
           // Mostrar los resultados existentes inmediatamente
