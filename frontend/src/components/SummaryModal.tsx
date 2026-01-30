@@ -442,25 +442,31 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         // Para OCR, obtener el resultado de OCR y mostrar en el modal
         // Cambiar al tab "new" para mostrar los resultados
         setTab('new');
+        setUploadedFile(file);
         
         try {
           const ocrResult = await ocrService.getOcrResult(uploadId);
           
           // Extraer el texto según la estructura del resultado
           let extractedTextValue = '';
+          let summary = '';
+          
           if (typeof ocrResult.extractedText === 'string') {
             extractedTextValue = ocrResult.extractedText;
           } else if (ocrResult.extractedText && typeof ocrResult.extractedText === 'object') {
-            extractedTextValue = (ocrResult.extractedText as any).text || '';
+            const ext = ocrResult.extractedText as any;
+            extractedTextValue = ext.text || '';
+            summary = ext.summary || '';
           } else if (ocrResult.rawText) {
             extractedTextValue = ocrResult.rawText;
           }
           
-          // Si existe el resultado, mostrar en el modal
-          onSummaryStart?.({
-            uploadId,
-            ocrText: extractedTextValue,
-          });
+          // Si existe el resultado, mostrar en el modal usando los campos de audio
+          setAudioTranscription(extractedTextValue);
+          setAudioSummary(summary || extractedTextValue);
+          setAudioProgress(100);
+          
+          // No llamar a onSummaryStart para evitar que se cierre el modal
         } catch (err: any) {
           // Si el OcrResult aún no existe, es porque aún está procesando
           // Notificar al usuario y dejar que el WebSocket lo actualice
