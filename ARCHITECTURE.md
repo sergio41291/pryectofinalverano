@@ -9,7 +9,7 @@
 - Database: PostgreSQL 16 (Users, Uploads) 
 - Cache/Queue: Redis 7 (Bull job queue)
 - File Storage: MinIO (S3-compatible object storage)
-- OCR Engine: PaddleOCR 3.4.0 (Python)
+- OCR Engine: EasyOCR + OCRmyPDF (Python)
 - Real-time: Socket.io WebSocket
 - Containerization: Docker & Docker Compose
 

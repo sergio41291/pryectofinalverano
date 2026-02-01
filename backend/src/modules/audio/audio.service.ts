@@ -92,6 +92,19 @@ export class AudioService {
     });
   }
 
+  async getAllAudioResultsPaginated(
+    userId: string,
+    skip: number,
+    take: number,
+  ): Promise<[AudioResult[], number]> {
+    return await this.audioResultRepository.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip,
+      take,
+    });
+  }
+
   async updateAudioResult(
     id: string,
     updates: Partial<AudioResult>,

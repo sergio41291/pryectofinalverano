@@ -10,6 +10,7 @@ import {
 import { Exclude } from 'class-transformer';
 import { Subscription } from '../../subscriptions/entities/subscription.entity';
 import { Upload } from '../../uploads/entities/upload.entity';
+import { Questionnaire } from '../../../entities/questionnaire.entity';
 
 @Entity('users')
 @Index(['email'], { unique: true })
@@ -68,4 +69,7 @@ export class User {
 
   @OneToMany(() => Upload, (upload) => upload.user)
   uploads: Upload[];
+
+  @OneToMany(() => Questionnaire, (questionnaire) => questionnaire.user)
+  questionnaires: Questionnaire[];
 }

@@ -6,6 +6,10 @@ import { AudioUploadModal } from '../components/AudioUploadModal';
 import { AudioViewModal } from '../components/AudioViewModal';
 import { AudioResultsList } from '../components/AudioResultsList';
 import { AudioResults } from '../components/AudioResults';
+import { AudioSummaryModal } from '../components/AudioSummaryModal';
+import { AudioQuestionnaireModal } from '../components/AudioQuestionnaireModal';
+import { QuestionnaireGeneratorModal } from '../components/QuestionnaireGeneratorModal';
+import { QuestionnairesList } from '../components/QuestionnairesList';
 import { aiService } from '../services/aiService';
 import { type AudioResult } from '../services/audioService';
 import { useOcrProgress } from '../hooks/useOcrProgress';
@@ -29,7 +33,7 @@ import {
 export function Home() {
   // Inicializar socket de OCR al cargar el componente
   const { state, reset } = useOcrProgress();
-  const { results: audioResults, loading: audioLoading, refresh: refreshAudio } = useAudioHistory();
+  const { results: audioResults, loading: audioLoading, refresh: refreshAudio, page: audioPage, total: audioTotal, loadResults: audioLoadResults } = useAudioHistory();
   
   const [seccion, setSeccion] = useState('inicio');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -42,6 +46,13 @@ export function Home() {
   const [audioResult, setAudioResult] = useState<AudioResult | null>(null);
   const [audioFileName, setAudioFileName] = useState('');
   const [viewingAudio, setViewingAudio] = useState<AudioResult | null>(null);
+  
+  // IA Lab States
+  const [showAudioSummary, setShowAudioSummary] = useState(false);
+  const [showAudioQuestionnaire, setShowAudioQuestionnaire] = useState(false);
+  const [selectedAudioId, setSelectedAudioId] = useState<string>('');
+  const [selectedAudioTranscription, setSelectedAudioTranscription] = useState<string>('');
+  const [showQuestionnaireGenerator, setShowQuestionnaireGenerator] = useState(false);
 
   const misArchivos = [
     { nombre: 'Clase de Historia.pdf', tipo: 'PDF', fecha: 'Hace 2 horas', icon: FileText, color: 'text-red-500' },
@@ -170,26 +181,37 @@ export function Home() {
               </button>
             </div>
 
-            {audioLoading && !audioResults.length ? (
+            {audioLoading && !audioResults?.length ? (
               <div className="flex items-center justify-center p-20 bg-white rounded-3xl border border-gray-100">
                 <Loader size={40} className="animate-spin text-blue-600" />
               </div>
-            ) : audioResults.length > 0 ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <AudioResultsList
-                  results={audioResults}
-                  loading={audioLoading}
-                  onView={(result) => setViewingAudio(result)}
-                  onDelete={async () => {
-                    try {
-                      // Delete would need to be implemented in audioService
-                      refreshAudio();
-                    } catch (err) {
-                      console.error('Error deleting audio result:', err);
-                    }
-                  }}
-                />
-              </div>
+            ) : audioResults?.length > 0 ? (
+              <AudioResultsList
+                results={audioResults}
+                loading={audioLoading}
+                page={audioPage}
+                total={audioTotal}
+                onView={(result) => setViewingAudio(result)}
+                onPageChange={(newPage) => audioLoadResults(newPage)}
+                onDelete={async () => {
+                  try {
+                    // Delete would need to be implemented in audioService
+                    refreshAudio();
+                  } catch (err) {
+                    console.error('Error deleting audio result:', err);
+                  }
+                }}
+                onAIAction={(action, result) => {
+                  if (action === 'summary') {
+                    setSelectedAudioId(result.id);
+                    setShowAudioSummary(true);
+                  } else if (action === 'quiz') {
+                    setSelectedAudioId(result.id);
+                    setSelectedAudioTranscription(result.transcription || '');
+                    setShowQuestionnaireGenerator(true);
+                  }
+                }}
+              />
             ) : (
               <div className="p-20 text-center bg-white border border-gray-100 shadow-sm rounded-3xl">
                 <Headphones size={48} className="mx-auto mb-4 text-gray-300" />
@@ -247,13 +269,13 @@ export function Home() {
             )}
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              <div className="p-8 text-white shadow-lg bg-gradient-to-br from-blue-600 to-blue-700 rounded-3xl">
-                <h3 className="mb-2 text-xl font-bold text-white">Resumen Automático</h3>
-                <p className="mb-4 text-sm text-blue-100">Extrae lo más importante de tus PDFs en segundos.</p>
+              <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group">
+                <h3 className="mb-2 text-xl font-bold text-gray-900">Resumen Automático</h3>
+                <p className="mb-4 text-sm text-gray-600">Extrae lo más importante de tus PDFs en segundos.</p>
                 <button
                   onClick={() => setIsSummaryModalOpen(true)}
                   disabled={isGeneratingSummary}
-                  className="px-6 py-2 text-sm font-bold text-blue-600 bg-white rounded-xl hover:bg-blue-50 transition-colors disabled:opacity-50"
+                  className="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   {isGeneratingSummary ? (
                     <>
@@ -261,18 +283,22 @@ export function Home() {
                       Generando...
                     </>
                   ) : (
-                    'Probar ahora'
+                    <>
+                      <span className="group-hover:hidden">Empezar</span>
+                      <span className="hidden group-hover:inline">Probar ahora</span>
+                    </>
                   )}
                 </button>
               </div>
-              <div className="p-8 transition-all bg-white border border-gray-100 shadow-sm rounded-3xl hover:shadow-md">
-                <h3 className="mb-2 font-sans text-xl font-bold text-gray-800">Generar Cuestionario</h3>
-                <p className="mb-4 text-sm text-gray-500">Crea preguntas de estudio basadas en tu material.</p>
+              <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group">
+                <h3 className="mb-2 font-sans text-xl font-bold text-gray-900">Generar Cuestionario</h3>
+                <p className="mb-4 text-sm text-gray-600">Crea preguntas de estudio basadas en tu material.</p>
                 <button
-                  onClick={() => {}}
-                  className="px-6 py-2 text-sm font-bold text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                  onClick={() => setShowQuestionnaireGenerator(true)}
+                  className="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors"
                 >
-                  Empezar
+                  <span className="group-hover:hidden">Empezar</span>
+                  <span className="hidden group-hover:inline">Probar ahora</span>
                 </button>
               </div>
             </div>
@@ -289,6 +315,19 @@ export function Home() {
               <h3 className="text-xl font-bold text-blue-800">Próximamente</h3>
               <p className="text-blue-600/60">Estamos preparando el espacio para colaborar con tu clase.</p>
             </div>
+          </div>
+        );
+
+      case 'cuestionarios':
+        return (
+          <div>
+            <div className="flex items-start justify-between mb-8">
+              <div>
+                <h1 className="mb-2 text-3xl font-bold text-gray-800">Mis Cuestionarios</h1>
+                <p className="text-gray-500">Organiza, comparte y gestiona tus cuestionarios.</p>
+              </div>
+            </div>
+            <QuestionnairesList />
           </div>
         );
 
@@ -373,6 +412,32 @@ export function Home() {
           } finally {
             setIsGeneratingSummary(false);
           }
+        }}
+      />
+      <AudioSummaryModal
+        isOpen={showAudioSummary}
+        audioResultId={selectedAudioId}
+        onClose={() => {
+          setShowAudioSummary(false);
+          setSelectedAudioId('');
+        }}
+      />
+      <AudioQuestionnaireModal
+        isOpen={showAudioQuestionnaire}
+        audioResultId={selectedAudioId}
+        onClose={() => {
+          setShowAudioQuestionnaire(false);
+          setSelectedAudioId('');
+        }}
+      />
+      <QuestionnaireGeneratorModal
+        isOpen={showQuestionnaireGenerator}
+        preloadedText={selectedAudioTranscription}
+        preloadedFileName={`Audio ${selectedAudioId.slice(0, 8)}`}
+        onClose={() => {
+          setShowQuestionnaireGenerator(false);
+          setSelectedAudioId('');
+          setSelectedAudioTranscription('');
         }}
       />
     </div>

@@ -76,8 +76,8 @@ pip install -r requirements.txt
 python check-requirements.ps1
 
 # O verificar manualmente
-python -c "import paddleocr; print('✅ PaddleOCR OK')"
 python -c "import easyocr; print('✅ EasyOCR OK')"
+python -c "import ocrmypdf; print('✅ OCRmyPDF OK')"
 python -c "import pytesseract; print('✅ Tesseract OK')"
 python -c "import pdf2image; print('✅ pdf2image OK')"
 ```
@@ -190,12 +190,11 @@ pip install -r requirements.txt
 
 | Paquete | Versión | Propósito |
 |---------|---------|----------|
-| **paddleocr** | 3.4.0 | OCR multiidioma con redes neuronales |
-| **easyocr** | ≥1.7.0 | OCR alternativo con soporte multilingual |
+| **easyocr** | ≥1.7.0 | OCR multiidioma para imágenes |
+| **ocrmypdf** | ≥14.0.0 | OCR embebido en PDFs |
 | **pytesseract** | ≥0.3.10 | Interfaz Python para Tesseract |
 | **pdf2image** | ≥1.16.3 | Conversión de PDF a imágenes |
 | **pdfminer.six** | ≥20230228 | Extracción de texto de PDFs |
-| **ocrmypdf** | ≥14.0.0 | OCR para PDFs con preservación de formato |
 | **Pillow** | ≥10.0.0 | Procesamiento de imágenes |
 | **opencv-python** | ≥4.8.0 | Procesamiento de visión por computadora |
 | **numpy** | ≥1.20.0 | Computación numérica |
@@ -249,11 +248,11 @@ pip install -r requirements.txt
 - Linux: `sudo apt install poppler-utils`
 - macOS: `brew install poppler`
 
-### Error: "No module named 'paddle'"
-**Solución:** Reinstala paddleocr en el virtual environment
+### Error: "No module named 'easyocr' or 'ocrmypdf'"
+**Solución:** Reinstala las dependencias Python
 ```bash
-pip uninstall paddleocr
-pip install paddleocr==3.4.0
+pip uninstall easyocr ocrmypdf
+pip install -r backend/requirements.txt
 ```
 
 ### Error: "Visual C++ Build Tools missing"
@@ -268,10 +267,11 @@ source venv_ocr/bin/activate
 pip install -r requirements.txt
 ```
 
-### Modelos de OCR muy grandes (2-5 GB)
-**Info:** PaddleOCR descarga modelos automáticamente
-- Primera ejecución tardará 5-15 minutos
-- Los modelos se cachean en `~/.paddleocr/models`
+### Modelos de OCR - Caché y Descargas
+**Info:** EasyOCR y OCRmyPDF descargan modelos automáticamente
+- Primera ejecución de EasyOCR tardará 5-15 minutos
+- Los modelos se cachean en `~/.EasyOCR/model`
+- OCRmyPDF usa Tesseract (más ligero)
 - Ejecuciones posteriores serán rápidas
 
 ---

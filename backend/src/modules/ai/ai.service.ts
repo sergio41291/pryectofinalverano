@@ -139,31 +139,36 @@ export class AiService {
 
     const systemPrompt = `You are an expert educator creating multiple-choice questions.
 Generate exactly ${numQuestions} multiple-choice questions in ${language}.
-Response MUST be valid JSON with this structure:
+IMPORTANT: Response MUST be ONLY valid JSON, no other text before or after.
+Do NOT use markdown code blocks. Do NOT wrap in backticks.
+Return ONLY the raw JSON object, nothing else.
+
+JSON structure:
 {
   "questions": [
     {
       "id": 1,
       "question": "Question text",
-      "options": ["A", "B", "C", "D"],
-      "correctAnswer": "A",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": "Option A",
       "explanation": "Why this is correct"
     }
   ]
 }`;
 
-    const userPrompt = `Create ${numQuestions} multiple-choice questions based on this text in ${language}:
+    const userPrompt = `Create exactly ${numQuestions} multiple-choice questions based on this text in ${language}. 
+Each question must have exactly 4 options.
+Return ONLY the JSON object with no markdown, no code blocks, no extra text.
 
-${text}
-
-Return ONLY valid JSON, no other text.`;
+Text:
+${text}`;
 
     this.logger.log(`Generating ${numQuestions} questions from ${text.length} chars`);
 
     try {
       const message = await this.client.messages.create({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 2048,
+        max_tokens: 3000,
         system: systemPrompt,
         messages: [
           {
@@ -180,13 +185,54 @@ Return ONLY valid JSON, no other text.`;
 
       try {
         // Try to extract JSON if wrapped in markdown code blocks
-        const jsonMatch = response.match(/```(?:json)?\n?([\s\S]*?)\n?```/);
-        const jsonString = jsonMatch ? jsonMatch[1] : response;
+        let jsonString = response.trim();
+        
+        // Try multiple approaches to extract JSON
+        
+        // Approach 1: Remove markdown code blocks with flexible regex
+        const jsonMatch = jsonString.match(/```[\s\S]*?\n([\s\S]*?)\n```/);
+        if (jsonMatch && jsonMatch[1]) {
+          jsonString = jsonMatch[1].trim();
+        } else {
+          // Approach 2: Find the first { and last } and extract everything between
+          const firstBrace = jsonString.indexOf('{');
+          const lastBrace = jsonString.lastIndexOf('}');
+          
+          if (firstBrace !== -1 && lastBrace !== -1 && firstBrace < lastBrace) {
+            jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+          }
+        }
+        
+        // Final cleanup
+        jsonString = jsonString.trim();
+        
+        this.logger.log(`Parsing questionnaire JSON. Input length: ${jsonString.length}, First 100 chars: ${jsonString.substring(0, 100)}`);
+        
         const parsed = JSON.parse(jsonString);
-        this.logger.log(`Questionnaire generated with ${parsed.questions?.length || 0} questions`);
+        
+        // Validate structure
+        if (!parsed.questions || !Array.isArray(parsed.questions)) {
+          throw new Error('Missing or invalid questions array');
+        }
+        
+        if (parsed.questions.length === 0) {
+          throw new Error('Questions array is empty');
+        }
+        
+        // Validate each question has required fields
+        for (const q of parsed.questions) {
+          if (!q.question || !q.options || !Array.isArray(q.options) || q.options.length === 0) {
+            throw new Error('Invalid question structure');
+          }
+        }
+        
+        this.logger.log(`Questionnaire generated with ${parsed.questions.length} questions`);
         return parsed;
       } catch (parseError) {
-        this.logger.error(`Failed to parse questionnaire JSON: ${response.substring(0, 200)}`);
+        this.logger.error(`Failed to parse questionnaire JSON`);
+        this.logger.error(`Response length: ${response.length}, First 200 chars: ${response.substring(0, 200)}`);
+        this.logger.error(`Response last 200 chars: ${response.substring(Math.max(0, response.length - 200))}`);
+        this.logger.error(`Parse error details:`, (parseError as any)?.message);
         throw new BadRequestException('Invalid questionnaire format generated');
       }
     } catch (error: any) {

@@ -16,7 +16,7 @@ import { StorageModule } from '../storage/storage.module';
       name: 'audio',
     }),
     forwardRef(() => UploadsModule),
-    AiModule,
+    forwardRef(() => AiModule),
     StorageModule,
   ],
   providers: [AudioService, AudioProcessor],

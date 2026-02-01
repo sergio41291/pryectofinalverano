@@ -45,12 +45,11 @@ chmod +x install-requirements.sh  # (si es necesario)
 
 ### Python (OCR & Audio)
 ```
-paddleocr==3.4.0      # OCR con redes neuronales
-easyocr>=1.7.0        # OCR alternativo
+easyocr>=1.7.0        # OCR para imágenes
+ocrmypdf>=14.0.0      # OCR para PDFs
 pytesseract>=0.3.10   # Interfaz para Tesseract
 pdf2image>=1.16.3     # PDF a imagen
 pdfminer.six>=20230228 # Extracción de texto
-ocrmypdf>=14.0.0      # OCR para PDFs
 Pillow>=10.0.0        # Procesamiento de imágenes
 opencv-python>=4.8.0  # Visión por computadora
 ```
@@ -208,17 +207,20 @@ Debería mostrar un resumen con ✅ para todas las dependencias.
 
 ---
 
-## 🧠 Descargar Modelos de OCR
+## 🧠 Modelos de OCR - Auto-descarga
 
-Los modelos de PaddleOCR se descargan automáticamente, pero puedes pre-descargarlos:
+Los modelos de EasyOCR y OCRmyPDF se descargan automáticamente en el primer uso:
 
 ```bash
-cd backend
-source venv_ocr/bin/activate  # (en Windows: .\venv_ocr\Scripts\Activate.ps1)
-python scripts/setup_ocr_models.py
+# EasyOCR descarga al primer uso
+python -c "import easyocr; reader = easyocr.Reader(['es'])"
+
+# OCRmyPDF usa Tesseract (mucho más ligero)
+python -c "import ocrmypdf; print('OCRmyPDF OK')"
 ```
 
-**Nota:** La primera descarga tardará 10-20 minutos y ocupará ~2-5GB
+**Nota:** La primera ejecución de EasyOCR tardará 10-20 minutos y ocupará ~1GB
+**OCRmyPDF es más ligero (~100MB) y más rápido**
 
 ---
 
@@ -269,9 +271,10 @@ pip install --upgrade setuptools wheel
 pip install -r requirements.txt --no-cache-dir
 ```
 
-### Modelos de OCR muy grandes
-- Primera descarga: 5-15 minutos
-- Almacenamiento: `~/.paddleocr/models` (~2-5GB)
+### Modelos de OCR - Auto-descarga
+- EasyOCR primera ejecución: 10-20 minutos (~1GB)
+- Almacenamiento: `~/.EasyOCR/model`
+- OCRmyPDF es más ligero (~100MB)
 - Las siguientes ejecuciones serán rápidas
 
 ---
@@ -280,8 +283,8 @@ pip install -r requirements.txt --no-cache-dir
 
 - **[SYSTEM_REQUIREMENTS.md](SYSTEM_REQUIREMENTS.md)** - Guía detallada por SO
 - **[QUICKSTART.md](QUICKSTART.md)** - Inicio rápido del proyecto
-- **[PADDLE_OCR_SETUP.md](PADDLE_OCR_SETUP.md)** - Configuración de PaddleOCR
 - **[requirements.txt](backend/requirements.txt)** - Todas las dependencias Python
+- **[CHECKLIST.md](CHECKLIST.md)** - Checklist de fases
 
 ---
 

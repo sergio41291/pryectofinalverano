@@ -7,9 +7,12 @@ import {
   Res,
   BadRequestException,
   Logger,
+  Param,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AiService } from './ai.service';
+import { AudioService } from '../audio/audio.service';
+import { OcrService } from '../ocr/ocr.service';
 import { Response } from 'express';
 
 interface AuthRequest extends Request {
@@ -24,7 +27,11 @@ interface AuthRequest extends Request {
 export class AiController {
   private readonly logger = new Logger(AiController.name);
 
-  constructor(private readonly aiService: AiService) {}
+  constructor(
+    private readonly aiService: AiService,
+    private readonly audioService: AudioService,
+    private readonly ocrService: OcrService,
+  ) {}
 
   /**
    * Stream summary generation using Claude API
@@ -166,6 +173,119 @@ export class AiController {
       };
     } catch (error: any) {
       this.logger.error(`Translation error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate summary for audio transcription
+   * POST /api/processing/audio/:audioResultId/summary
+   */
+  @Post('audio/:audioResultId/summary')
+  async generateAudioSummary(
+    @Param('audioResultId') audioResultId: string,
+    @Body() body: { language?: string; maxTokens?: number } = {},
+    @Res() res: Response,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      // Get audio result and verify ownership
+      const audioResult = await this.audioService.getAudioResultById(audioResultId);
+      
+      if (!audioResult || audioResult.userId !== req.user.id) {
+        return res.status(403).json({
+          error: 'Audio not found or access denied',
+        });
+      }
+
+      if (!audioResult.transcription) {
+        return res.status(400).json({
+          error: 'Audio has no transcription yet',
+        });
+      }
+
+      this.logger.log(
+        `User ${req.user.id} requested summary for audio ${audioResultId}`,
+      );
+
+      // Set headers for Server-Sent Events
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      // Generate summary with streaming
+      const generator = this.aiService.streamSummarize({
+        text: audioResult.transcription,
+        language: body.language || audioResult.language || 'es',
+        maxTokens: body.maxTokens || 1024,
+        style: 'bullet-points',
+      });
+
+      // Send each chunk as SSE data
+      for await (const chunk of generator) {
+        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      }
+
+      // Send completion signal
+      res.write(`data: ${JSON.stringify({ complete: true })}\n\n`);
+      res.end();
+    } catch (error: any) {
+      this.logger.error(`Audio summary error: ${error?.message}`);
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: 'Failed to generate summary',
+          message: error?.message,
+        });
+      } else {
+        res.write(`data: ${JSON.stringify({ error: error?.message })}\n\n`);
+        res.end();
+      }
+    }
+  }
+
+  /**
+   * Generate questionnaire for audio transcription
+   * POST /api/processing/audio/:audioResultId/questionnaire
+   */
+  @Post('audio/:audioResultId/questionnaire')
+  async generateAudioQuestionnaire(
+    @Param('audioResultId') audioResultId: string,
+    @Body()
+    body: {
+      difficulty?: 'easy' | 'medium' | 'hard';
+      numQuestions?: number;
+    } = {},
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      // Get audio result and verify ownership
+      const audioResult = await this.audioService.getAudioResultById(audioResultId);
+      
+      if (!audioResult || audioResult.userId !== req.user.id) {
+        throw new BadRequestException('Audio not found or access denied');
+      }
+
+      if (!audioResult.transcription) {
+        throw new BadRequestException('Audio has no transcription yet');
+      }
+
+      this.logger.log(
+        `User ${req.user.id} requested questionnaire for audio ${audioResultId}`,
+      );
+
+      const questionnaire = await this.aiService.generateQuestionnaire(
+        audioResult.transcription,
+        audioResult.language || 'es',
+        body.numQuestions || 5,
+      );
+
+      return {
+        success: true,
+        data: questionnaire,
+      };
+    } catch (error: any) {
+      this.logger.error(`Audio questionnaire error: ${error?.message}`);
       throw error;
     }
   }

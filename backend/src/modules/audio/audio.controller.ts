@@ -8,6 +8,7 @@ import {
   Logger,
   NotFoundException,
   Request,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AudioService } from './audio.service';
@@ -93,9 +94,23 @@ export class AudioController {
   }
 
   @Get()
-  async getAllAudioResults(@Request() req: any): Promise<AudioResult[]> {
+  async getAllAudioResults(
+    @Request() req: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '10',
+  ): Promise<{ data: AudioResult[]; total: number }> {
     try {
-      return await this.audioService.getAllAudioResults(req.user.id);
+      const pageNum = Math.max(1, parseInt(page, 10) || 1);
+      const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+      const skip = (pageNum - 1) * limitNum;
+      
+      const [data, total] = await this.audioService.getAllAudioResultsPaginated(
+        req.user.id,
+        skip,
+        limitNum,
+      );
+      
+      return { data, total };
     } catch (error: any) {
       this.logger.error(`Error getting audio results: ${error?.message}`);
       throw error;

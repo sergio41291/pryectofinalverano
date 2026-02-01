@@ -181,13 +181,13 @@ Ver notificación en tiempo real (WebSocket)
 ### Backend - OCR Integration
 ```
 ✅ backend/src/modules/ocr/ocr.processor.ts
-   → FIXED: Ahora ejecuta correctamente el script Python
+   → Procesador OCR con soporte EasyOCR y OCRmyPDF
    
-✅ backend/scripts/paddle_ocr_service.py
-   → Servicio de OCR con PaddleOCR 3.4.0
+✅ backend/scripts/ocr_service.py
+   → Servicio de OCR con EasyOCR + OCRmyPDF
    
 ✅ backend/requirements.txt
-   → Dependencies Python (paddleocr, pillow, numpy)
+   → Dependencies Python (easyocr, ocrmypdf, pillow, opencv-python)
 ```
 
 ### Backend - Testing & Verification
@@ -328,7 +328,7 @@ Phase 3: Advanced Features
 
 | Problema | Solución |
 |----------|----------|
-| "PaddleOCR not found" | `pip install -r requirements.txt` |
+| "EasyOCR or OCRmyPDF not found" | `pip install -r requirements.txt` |
 | "Cannot connect to PostgreSQL" | Iniciar PostgreSQL service |
 | "Port 3001 in use" | `netstat -ano \| findstr :3001` → kill |
 | "npm: command not found" | Instalar Node.js desde nodejs.org |
@@ -349,7 +349,7 @@ Para reportar issues:
 - Redis 7 (caché)
 - Bull 4.11 (job queue)
 - Socket.io 4.7 (WebSocket)
-- Python 3.9 (PaddleOCR)
+- Python 3.9 (EasyOCR + OCRmyPDF)
 
 **Frontend:**
 - React 19 (componentes)
@@ -383,7 +383,7 @@ Para reportar issues:
 ├── Redis 7             - Cache & job queue
 ├── MinIO 7.x           - S3-compatible storage
 ├── Socket.io           - Real-time WebSocket
-└── PaddleOCR 3.4.0     - OCR engine (Python)
+└── EasyOCR + OCRmyPDF - OCR engines (Python)
 ```
 
 ### Infrastructure
@@ -1022,16 +1022,19 @@ for await (const chunk of streaming) {
 
 ---
 
-## 🐍 Paddle OCR (Extracción de Texto)
+## 🐍 OCR - EasyOCR & OCRmyPDF
 
-Servicio Python integrado para OCR:
+Stack de herramientas OCR integradas en el backend:
 
 ```bash
-# Instalación
-pip install paddleocr pillow pdf2image
+# Las dependencias están en requirements.txt
+pip install -r backend/requirements.txt
 
-# Uso
-python backend/scripts/paddle_ocr_service.py image.jpg output.json
+# Esto instala:
+# - easyocr (OCR de imágenes)
+# - ocrmypdf (OCR embebido en PDFs)
+# - tesseract (Motor OCR alternativo)
+# - pdf2image (Conversión de PDFs)
 ```
 
 **Ventajas:**
@@ -1039,8 +1042,13 @@ python backend/scripts/paddle_ocr_service.py image.jpg output.json
 - ✅ Preciso (>95% en español)
 - ✅ Multi-idioma (80+)
 - ✅ Sin dependencias de APIs pagas
+- ✅ EasyOCR: Rápido en CPU
+- ✅ OCRmyPDF: Preserva estructura PDF
 
-**Ver [PADDLE_OCR_SETUP.md](./PADDLE_OCR_SETUP.md) para setup completo.**
+**Características:**
+- EasyOCR: Óptimo para imágenes y documentos escaneados
+- OCRmyPDF: Inserta OCR directamente en archivos PDF
+- Tesseract: Motor OCR alternativo/fallback
 
 ---
 
@@ -1146,7 +1154,7 @@ MIT - Libre para uso personal y educativo
 1. **Leer [QUICKSTART.md](./QUICKSTART.md)** - Inicio en 5 minutos
 2. **Leer [ROADMAP.md](./ROADMAP.md)** - Entender plan completo
 3. **Ejecutar:** `docker-compose up -d` - Iniciar servicios
-4. **Instalar:** `pip install paddleocr` - OCR
+4. **Instalar:** `pip install -r backend/requirements.txt` - OCR
 5. **Comenzar Fase 1:** Backend NestJS setup
 
 ---

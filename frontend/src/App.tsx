@@ -1,9 +1,22 @@
 import { useState } from 'react';
 import { User, Mail, Lock, ArrowRight, BookOpen, Check, X } from 'lucide-react';
 import { Home } from './pages/Home';
+import { Share } from './pages/Share';
 import { useAuth } from './context/AuthContext';
 
-function App() {
+// Componente router simple
+function Router() {
+  const pathname = window.location.pathname;
+  const shareMatch = pathname.match(/^\/share\/(.+)$/);
+
+  if (shareMatch) {
+    return <Share />;
+  }
+
+  return <AppContent />;
+}
+
+function AppContent() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -281,7 +294,11 @@ function App() {
 
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+function App() {
+  return <Router />;
+}
+
+export default App;

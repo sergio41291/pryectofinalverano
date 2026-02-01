@@ -28,6 +28,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
       if (typeof exceptionResponse === 'object') {
         details = exceptionResponse;
+        // If the exception response is our custom object with requiresType, flatten it
+        if (details?.requiresType) {
+          return response.status(status).json({
+            statusCode: status,
+            timestamp: new Date().toISOString(),
+            path: request.url,
+            method: request.method,
+            ...details, // Spread our custom fields directly
+          });
+        }
       }
     } else if (exception instanceof Error) {
       message = exception.message;

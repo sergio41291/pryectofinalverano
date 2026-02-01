@@ -10,6 +10,7 @@ import { StorageModule } from './modules/storage/storage.module';
 import { OcrModule } from './modules/ocr/ocr.module';
 import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
+import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -17,6 +18,9 @@ import { Subscription } from './modules/subscriptions/entities/subscription.enti
 import { Upload } from './modules/uploads/entities/upload.entity';
 import { OcrResult } from './modules/ocr/entities/ocr-result.entity';
 import { AudioResult } from './modules/audio/entities/audio-result.entity';
+import { Questionnaire } from './entities/questionnaire.entity';
+import { QuestionnaireResponse } from './entities/questionnaire-response.entity';
+import { QuestionnaireShare } from './entities/questionnaire-share.entity';
 
 @Module({
   imports: [
@@ -43,7 +47,7 @@ import { AudioResult } from './modules/audio/entities/audio-result.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -56,6 +60,7 @@ import { AudioResult } from './modules/audio/entities/audio-result.entity';
     OcrModule,
     AudioModule,
     AiModule,
+    QuestionnairesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
