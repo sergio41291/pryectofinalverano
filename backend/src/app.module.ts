@@ -11,6 +11,7 @@ import { OcrModule } from './modules/ocr/ocr.module';
 import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
+import { MindMapsModule } from './modules/mind-maps/mind-maps.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -22,6 +23,7 @@ import { Questionnaire } from './entities/questionnaire.entity';
 import { QuestionnaireResponse } from './entities/questionnaire-response.entity';
 import { QuestionnaireShare } from './entities/questionnaire-share.entity';
 import { Summary } from './entities/summary.entity';
+import { MindMap } from './entities/mind-map.entity';
 
 @Module({
   imports: [
@@ -48,7 +50,7 @@ import { Summary } from './entities/summary.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -62,6 +64,7 @@ import { Summary } from './entities/summary.entity';
     AudioModule,
     AiModule,
     QuestionnairesModule,
+    MindMapsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

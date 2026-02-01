@@ -9,6 +9,7 @@ import { Questionnaire } from './entities/questionnaire.entity';
 import { QuestionnaireResponse } from './entities/questionnaire-response.entity';
 import { QuestionnaireShare } from './entities/questionnaire-share.entity';
 import { Summary } from './entities/summary.entity';
+import { MindMap } from './entities/mind-map.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -27,6 +28,7 @@ export const AppDataSource = new DataSource({
     QuestionnaireResponse,
     QuestionnaireShare,
     Summary,
+    MindMap,
   ],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
