@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { UploadModal } from '../components/UploadModal';
 import { SummaryModal } from '../components/SummaryModal';
+import { MindMapModal } from '../components/MindMapModal';
 import { AudioUploadModal } from '../components/AudioUploadModal';
 import { AudioViewModal } from '../components/AudioViewModal';
 import { AudioResultsList } from '../components/AudioResultsList';
@@ -30,6 +31,7 @@ import {
   Copy,
   X,
   Headphones,
+  Network,
 } from 'lucide-react';
 
 export function Home() {
@@ -41,6 +43,7 @@ export function Home() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isMindMapModalOpen, setIsMindMapModalOpen] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryResult, setGeneratedSummary] = useState<string | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
@@ -276,7 +279,7 @@ export function Home() {
               </div>
             )}
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-md hover:border-blue-300 cursor-pointer group">
                 <h3 className="mb-2 text-xl font-bold text-gray-900">Resumen Automático</h3>
                 <p className="mb-4 text-sm text-gray-600">Extrae lo más importante de tus PDFs en segundos.</p>
@@ -305,6 +308,18 @@ export function Home() {
                   onClick={() => setShowQuestionnaireGenerator(true)}
                   className="px-6 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors"
                 >
+                  <span className="group-hover:hidden">Empezar</span>
+                  <span className="hidden group-hover:inline">Probar ahora</span>
+                </button>
+              </div>
+              <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-md hover:border-purple-300 cursor-pointer group">
+                <h3 className="mb-2 font-sans text-xl font-bold text-gray-900">Mapas Mentales</h3>
+                <p className="mb-4 text-sm text-gray-600">Visualiza conceptos complejos en diagramas interactivos.</p>
+                <button
+                  onClick={() => setIsMindMapModalOpen(true)}
+                  className="px-6 py-2 text-sm font-bold text-white bg-purple-600 rounded-xl hover:bg-purple-700 transition-colors flex items-center gap-2"
+                >
+                  <Network size={16} />
                   <span className="group-hover:hidden">Empezar</span>
                   <span className="hidden group-hover:inline">Probar ahora</span>
                 </button>
@@ -448,6 +463,21 @@ export function Home() {
           }
         }}
       />
+
+      <MindMapModal
+        isOpen={isMindMapModalOpen}
+        onClose={() => {
+          setIsMindMapModalOpen(false);
+          reset();
+        }}
+        ocrState={state}
+        ocrReset={reset}
+        onMindMapGenerated={(mindMap) => {
+          console.log('Mind map generated:', mindMap);
+          setIsMindMapModalOpen(false);
+        }}
+      />
+
       <AudioSummaryModal
         audioFileName={selectedAudioFileName}
         audioTranscription={selectedAudioTranscription}
