@@ -1,13 +1,13 @@
 import React, { useCallback } from 'react';
 import ReactFlow, {
-  Node,
-  Edge,
   Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
   MarkerType,
+  type Node,
+  type Edge,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import type { MindMapStructure } from '../services/mindMapService';
@@ -51,6 +51,7 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
         data: {
           label: node.label,
         },
+        draggable: true, // Enable dragging
         style: {
           background: node.style?.backgroundColor || colors.bg,
           color: node.style?.textColor || colors.text,
@@ -61,6 +62,7 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
           fontWeight: node.type === 'root' ? 'bold' : 'normal',
           minWidth: '120px',
           textAlign: 'center',
+          cursor: 'grab',
         },
       };
     });
@@ -113,7 +115,13 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
           nodes={nodes}
           edges={edges}
           fitView
+          nodesDraggable={true}
+          nodesConnectable={false}
+          elementsSelectable={true}
           attributionPosition="bottom-left"
+          minZoom={0.2}
+          maxZoom={2}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
         >
           <Background color="#E5E7EB" gap={16} />
           <Controls />
@@ -168,8 +176,8 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
       {/* Controls Help */}
       <div className="px-6 py-3 bg-blue-50 border-t border-blue-200">
         <p className="text-sm text-blue-800">
-          💡 <strong>Controles:</strong> Usa el mouse para hacer zoom y mover el mapa. Los botones en la
-          esquina inferior izquierda permiten ajustar la vista.
+          💡 <strong>Controles:</strong> Arrastra los nodos para reorganizarlos. Usa la rueda del mouse para hacer zoom. 
+          Haz clic y arrastra el fondo para mover el mapa completo.
         </p>
       </div>
     </div>

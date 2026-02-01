@@ -11,94 +11,97 @@
 ### 📊 Día 1-2: Mapas Mentales - Backend
 
 **Backend - Entidad y Base de Datos**
-- [ ] Crear `backend/src/entities/mind-map.entity.ts`
-  - [ ] Campos: id, userId, title, sourceText, structure (JSONB), createdAt, updatedAt
-  - [ ] Relación con User (ManyToOne)
-  - [ ] Validaciones de campos
+- [x] Crear `backend/src/entities/mind-map.entity.ts`
+  - [x] Campos: id, userId, title, sourceText, structure (JSONB), createdAt, updatedAt
+  - [x] Relación con User (ManyToOne)
+  - [x] Validaciones de campos
 
-- [ ] Crear migration `1743700000000-CreateMindMapsTable.ts`
-  - [ ] Tabla mind_maps
-  - [ ] Índices (userId, createdAt)
-  - [ ] Foreign key a users
-  - [ ] JSONB para structure
+- [x] Crear migration `1743700000000-CreateMindMapsTable.ts`
+  - [x] Tabla mind_maps
+  - [x] Índices (userId, createdAt)
+  - [x] Foreign key a users
+  - [x] JSONB para structure
 
-- [ ] Actualizar `app.module.ts`
-  - [ ] Agregar MindMap a entities array
+- [x] Actualizar `app.module.ts`
+  - [x] Agregar MindMap a entities array
 
-- [ ] Actualizar `data-source.ts`
-  - [ ] Agregar MindMap a entities
+- [x] Actualizar `data-source.ts`
+  - [x] Agregar MindMap a entities
 
 **Backend - Módulo MindMaps**
-- [ ] Crear directorio `backend/src/modules/mind-maps/`
-- [ ] Crear `mind-maps.module.ts`
-  - [ ] Importar TypeOrmModule.forFeature([MindMap])
-  - [ ] Importar forwardRef(() => AiModule)
+- [x] Crear directorio `backend/src/modules/mind-maps/`
+- [x] Crear `mind-maps.module.ts`
+  - [x] Importar TypeOrmModule.forFeature([MindMap])
+  - [x] Importar forwardRef(() => AiModule)
 
-- [ ] Crear `mind-maps.service.ts`
-  - [ ] `generateMindMap(userId, text)` - Llama a Claude
-  - [ ] `getMindMaps(userId, page, limit)` - Lista con paginación
-  - [ ] `getMindMap(id, userId)` - Obtiene uno específico
-  - [ ] `deleteMindMap(id, userId)` - Elimina
-  - [ ] `downloadMindMap(id, userId)` - Exporta JSON
+- [x] Crear `mind-maps.service.ts`
+  - [x] `generateMindMap(userId, text)` - Llama a Claude
+  - [x] `getMindMaps(userId, page, limit)` - Lista con paginación
+  - [x] `getMindMap(id, userId)` - Obtiene uno específico
+  - [x] `deleteMindMap(id, userId)` - Elimina
+  - [x] `downloadMindMap(id, userId)` - Exporta JSON
 
-- [ ] Crear `mind-maps.controller.ts`
-  - [ ] POST `/api/mind-maps/generate` - Generar con streaming
-  - [ ] GET `/api/mind-maps` - Listar con paginación
-  - [ ] GET `/api/mind-maps/:id` - Obtener uno
-  - [ ] DELETE `/api/mind-maps/:id` - Eliminar
-  - [ ] GET `/api/mind-maps/:id/download` - Descargar JSON
+- [x] Crear `mind-maps.controller.ts`
+  - [x] POST `/api/mind-maps/generate` - Generar con streaming
+  - [x] GET `/api/mind-maps` - Listar con paginación
+  - [x] GET `/api/mind-maps/:id` - Obtener uno
+  - [x] DELETE `/api/mind-maps/:id` - Eliminar
+  - [x] GET `/api/mind-maps/:id/download` - Descargar JSON
 
-- [ ] Crear DTOs
-  - [ ] `dto/generate-mind-map.dto.ts` (text, language?)
-  - [ ] `dto/mind-map-response.dto.ts`
+- [x] Crear DTOs
+  - [x] `dto/generate-mind-map.dto.ts` (text, language?)
+  - [x] `dto/mind-map-response.dto.ts`
 
 **Backend - Integración con Claude**
-- [ ] Actualizar `ai.service.ts`
-  - [ ] `generateMindMapStructure(text)` - Prompt para extraer nodos y relaciones
-  - [ ] Formato de respuesta: `{ nodes: [...], edges: [...] }`
-  - [ ] Validar estructura JSON
+- [x] Actualizar `ai.service.ts`
+  - [x] `generateMindMapStructure(text)` - Prompt para extraer nodos y relaciones
+  - [x] Formato de respuesta: `{ nodes: [...], edges: [...] }`
+  - [x] Validar estructura JSON
+  - [x] Mejorar algoritmo de posicionamiento (evitar superposición)
 
 ### 📊 Día 3: Mapas Mentales - Frontend
 
 **Frontend - Componentes**
-- [ ] Crear `frontend/src/components/MindMapGenerator.tsx`
-  - [ ] Textarea para input
-  - [ ] Botón generar
-  - [ ] Loading state con streaming
-  - [ ] Vista previa del JSON generado
+- [x] Crear `frontend/src/components/MindMapGenerator.tsx`
+  - [x] Textarea para input
+  - [x] Botón generar
+  - [x] Loading state con streaming
+  - [x] Vista previa del JSON generado
 
-- [ ] Crear `frontend/src/components/MindMapVisualization.tsx`
-  - [ ] Integrar React Flow o D3.js
-  - [ ] Renderizar nodos y edges
-  - [ ] Zoom y pan
-  - [ ] Tooltips en nodos
+- [x] Crear `frontend/src/components/MindMapVisualization.tsx`
+  - [x] Integrar React Flow o D3.js
+  - [x] Renderizar nodos y edges
+  - [x] Zoom y pan
+  - [x] Tooltips en nodos
+  - [x] Nodos arrastrables (drag & drop)
+  - [x] Mejor espaciado para evitar superposición
 
-- [ ] Crear `frontend/src/components/MindMapsList.tsx`
-  - [ ] Cards con preview
-  - [ ] Paginación
-  - [ ] Botones: Ver, Descargar, Eliminar
-  - [ ] Filtros por fecha
+- [x] Crear `frontend/src/components/MindMapsList.tsx`
+  - [x] Cards con preview
+  - [x] Paginación
+  - [x] Botones: Ver, Descargar, Eliminar
+  - [x] Filtros por fecha
 
-- [ ] Crear `frontend/src/pages/MindMaps.tsx`
-  - [ ] Layout principal
-  - [ ] Tabs: Generar | Mis Mapas
+- [x] Crear `frontend/src/pages/MindMaps.tsx`
+  - [x] Layout principal
+  - [x] Tabs: Generar | Mis Mapas
 
 **Frontend - Servicios**
-- [ ] Crear `frontend/src/services/mindMapService.ts`
-  - [ ] `generateMindMap(text)` - Streaming
-  - [ ] `getMindMaps(page, limit)`
-  - [ ] `getMindMap(id)`
-  - [ ] `deleteMindMap(id)`
-  - [ ] `downloadMindMap(id)`
+- [x] Crear `frontend/src/services/mindMapService.ts`
+  - [x] `generateMindMap(text)` - Streaming
+  - [x] `getMindMaps(page, limit)`
+  - [x] `getMindMap(id)`
+  - [x] `deleteMindMap(id)`
+  - [x] `downloadMindMap(id)`
 
 **Frontend - Integración**
-- [ ] Actualizar `Sidebar.tsx`
-  - [ ] Agregar item "Mapas Mentales" con ícono Network
-  - [ ] Navegación a sección
+- [x] Actualizar `Sidebar.tsx`
+  - [x] Agregar item "Mapas Mentales" con ícono Network
+  - [x] Navegación a sección
 
-- [ ] Actualizar `Home.tsx`
-  - [ ] Case 'mapas-mentales' en renderContenido()
-  - [ ] Renderizar componente MindMaps
+- [x] Actualizar `Home.tsx`
+  - [x] Case 'mapas-mentales' en renderContenido()
+  - [x] Renderizar componente MindMaps
 
 ### 📊 Día 4-5: Base de Datos para Grupos
 

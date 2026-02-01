@@ -40,34 +40,48 @@ Return ONLY valid JSON (no markdown, no code blocks) with this exact structure:
       "label": "Main Concept",
       "type": "root",
       "level": 0,
-      "position": { "x": 0, "y": 0 }
+      "position": { "x": 400, "y": 50 }
     },
     {
       "id": "node-2",
       "label": "Sub Concept",
       "type": "branch",
       "level": 1,
-      "position": { "x": 200, "y": 100 }
+      "position": { "x": 200, "y": 200 }
+    },
+    {
+      "id": "node-3",
+      "label": "Another Sub",
+      "type": "branch",
+      "level": 1,
+      "position": { "x": 600, "y": 200 }
     }
   ],
   "edges": [
     {
       "id": "edge-1",
       "source": "node-1",
-      "target": "node-2",
-      "label": "relates to"
+      "target": "node-2"
     }
   ]
 }
 
+CRITICAL POSITIONING RULES:
+1. Root node (level 0): Center it at x=400, y=50
+2. Level 1 nodes (branches): Spread horizontally 300-400px apart, y=200
+   Example: If 3 branches: x=100, x=400, x=700 (all y=200)
+3. Level 2 nodes (leaves): Under their parent ±150px horizontally, y=350
+   Example: Children of node at x=400: place at x=250, x=400, x=550
+4. Ensure NO overlapping: minimum 250px horizontal gap between siblings
+5. Vertical spacing: 150px between levels
+
 Rules:
-1. Always start with ONE root node (level 0)
+1. Always start with ONE root node (level 0) centered
 2. Create hierarchical structure (root → branches → leaves)
 3. Use meaningful labels in ${language}
-4. Calculate positions for visual layout (spread horizontally by level)
-5. Limit to 20 nodes maximum for clarity
-6. Each edge must connect existing node IDs
-7. Return ONLY the JSON object, nothing else`;
+4. Limit to 15 nodes maximum for clarity
+5. Each edge must connect existing node IDs
+6. Return ONLY the JSON object, nothing else`;
 
     const userPrompt = `Create a mind map from this text in ${language}:
 
