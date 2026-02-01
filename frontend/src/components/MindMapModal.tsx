@@ -556,10 +556,45 @@ export function MindMapModal({ isOpen, onClose, onMindMapGenerated, ocrState, oc
           {/* Tab Archivos Existentes */}
           {tab === 'existing' && !generatedMindMap && (
             <div>
-              <ExistingFilesSection
-                onSelectFile={handleExistingFileSelect}
-                isLoading={processingExisting}
-              />
+              {processingExisting || isGenerating ? (
+                <div className="bg-purple-50 border border-purple-200 rounded-xl p-8">
+                  <div className="flex flex-col items-center gap-4">
+                    <Loader className="animate-spin text-purple-600" size={48} />
+                    <div className="text-center">
+                      <h3 className="font-bold text-purple-900 mb-2 text-lg">
+                        {processingExisting && !isGenerating && 'Extrayendo texto del archivo...'}
+                        {isGenerating && 'Generando Mapa Mental con IA...'}
+                      </h3>
+                      <p className="text-sm text-purple-700">
+                        {processingExisting && !isGenerating && 'Procesando el contenido del archivo seleccionado'}
+                        {isGenerating && 'Estamos analizando el texto y creando tu mapa mental'}
+                      </p>
+                    </div>
+                    
+                    {/* Progress steps */}
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                        processingExisting ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        <CheckCircle2 size={16} />
+                        Extrayendo texto
+                      </div>
+                      <div className="w-8 h-0.5 bg-gray-300"></div>
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                        isGenerating ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'
+                      }`}>
+                        <Network size={16} />
+                        Generando mapa
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <ExistingFilesSection
+                  onSelectFile={handleExistingFileSelect}
+                  isLoading={false}
+                />
+              )}
             </div>
           )}
         </div>
