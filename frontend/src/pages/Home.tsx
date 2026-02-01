@@ -474,7 +474,7 @@ export function Home() {
         ocrReset={reset}
         onMindMapGenerated={(mindMap) => {
           console.log('Mind map generated:', mindMap);
-          setIsMindMapModalOpen(false);
+          // No cerrar el modal - dejar que el usuario vea la vista previa
         }}
       />
 
