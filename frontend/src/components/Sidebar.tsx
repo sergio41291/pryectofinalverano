@@ -1,4 +1,4 @@
-import { Home as HomeIcon, FolderOpen, BrainCircuit, Users, Settings, LogOut, BookOpen, Headphones, ClipboardList } from 'lucide-react';
+import { Home as HomeIcon, FolderOpen, BrainCircuit, Users, Settings, LogOut, BookOpen, Headphones, ClipboardList, FileText } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export function Sidebar({ seccionActual, setSeccion }: { seccionActual: string, setSeccion: (s: string) => void }) {
@@ -9,6 +9,7 @@ export function Sidebar({ seccionActual, setSeccion }: { seccionActual: string, 
     { id: 'materiales', icon: FolderOpen, label: 'Mis Materiales' },
     { id: 'transcripciones', icon: Headphones, label: 'Transcripciones' },
     { id: 'cuestionarios', icon: ClipboardList, label: 'Mis Cuestionarios' },
+    { id: 'resumenes', icon: FileText, label: 'Mis Resúmenes' },
     { id: 'ia', icon: BrainCircuit, label: 'IA Lab' },
     { id: 'comunidades', icon: Users, label: 'Comunidades' },
   ];

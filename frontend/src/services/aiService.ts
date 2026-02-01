@@ -131,6 +131,21 @@ export const aiService = {
     );
     return response.data;
   },
+
+  /**
+   * Save summary to database
+   */
+  async saveSummary(data: {
+    title: string;
+    sourceText: string;
+    summaryContent: string;
+    language: string;
+    style: string;
+    sourceFileName?: string;
+  }) {
+    const response = await api.post('/processing/summaries', data);
+    return response.data;
+  },
 };
 
 export default aiService;

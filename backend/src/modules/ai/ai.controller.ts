@@ -8,11 +8,16 @@ import {
   BadRequestException,
   Logger,
   Param,
+  Get,
+  Delete,
+  Query,
+  StreamableFile,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AiService } from './ai.service';
 import { AudioService } from '../audio/audio.service';
 import { OcrService } from '../ocr/ocr.service';
+import { CreateSummaryDto } from './dto/create-summary.dto';
 import { Response } from 'express';
 
 interface AuthRequest extends Request {
@@ -286,6 +291,125 @@ export class AiController {
       };
     } catch (error: any) {
       this.logger.error(`Audio questionnaire error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Save a generated summary
+   * POST /api/processing/summaries
+   * Body: { title, sourceText, summaryContent, language, style, sourceFileName? }
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('summaries')
+  async saveSummary(
+    @Body() dto: CreateSummaryDto,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const summary = await this.aiService.saveSummary(req.user.id, dto);
+      return {
+        success: true,
+        data: summary,
+      };
+    } catch (error: any) {
+      this.logger.error(`Save summary error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all my summaries
+   * GET /api/processing/summaries?page=1&limit=10
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Get('summaries')
+  async getMySummaries(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const result = await this.aiService.getMySummaries(req.user.id, page, limit);
+      return {
+        success: true,
+        data: result.data,
+        total: result.total,
+        page,
+        limit,
+      };
+    } catch (error: any) {
+      this.logger.error(`Get summaries error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Get a specific summary
+   * GET /api/processing/summaries/:id
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Get('summaries/:id')
+  async getSummary(
+    @Param('id') summaryId: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const summary = await this.aiService.getSummary(summaryId, req.user.id);
+      return {
+        success: true,
+        data: summary,
+      };
+    } catch (error: any) {
+      this.logger.error(`Get summary error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Download summary as text file
+   * GET /api/processing/summaries/:id/download
+   UseGuards(AuthGuard('jwt'))
+  @*/
+  @Get('summaries/:id/download')
+  async downloadSummary(
+    @Param('id') summaryId: string,
+    @Req() req: AuthRequest,
+    @Res() res: Response,
+  ) {
+    try {
+      const { content, fileName } = await this.aiService.getSummaryContent(summaryId, req.user.id);
+
+      res.set({
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Type': 'text/plain; charset=utf-8',
+      });
+
+      res.send(content);
+    } catch (error: any) {
+      this.logger.error(`Download summary error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a summary
+   * DELETE /api/processing/summaries/:id
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('summaries/:id')
+  async deleteSummary(
+    @Param('id') summaryId: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      await this.aiService.deleteSummary(summaryId, req.user.id);
+      return {
+        success: true,
+        message: 'Summary deleted',
+      };
+    } catch (error: any) {
+      this.logger.error(`Delete summary error: ${error?.message}`);
       throw error;
     }
   }

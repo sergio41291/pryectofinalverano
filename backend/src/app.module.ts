@@ -21,6 +21,7 @@ import { AudioResult } from './modules/audio/entities/audio-result.entity';
 import { Questionnaire } from './entities/questionnaire.entity';
 import { QuestionnaireResponse } from './entities/questionnaire-response.entity';
 import { QuestionnaireShare } from './entities/questionnaire-share.entity';
+import { Summary } from './entities/summary.entity';
 
 @Module({
   imports: [
@@ -47,7 +48,7 @@ import { QuestionnaireShare } from './entities/questionnaire-share.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),

@@ -1,6 +1,10 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import Anthropic from '@anthropic-ai/sdk';
 import { Readable } from 'stream';
+import { Summary } from '../../entities/summary.entity';
+import { CreateSummaryDto, SummaryResponseDto } from './dto/create-summary.dto';
 
 interface SummarizeOptions {
   text: string;
@@ -14,7 +18,10 @@ export class AiService {
   private readonly logger = new Logger(AiService.name);
   private readonly client: Anthropic;
 
-  constructor() {
+  constructor(
+    @InjectRepository(Summary)
+    private readonly summaryRepository: Repository<Summary>,
+  ) {
     if (!process.env.ANTHROPIC_API_KEY) {
       this.logger.warn('ANTHROPIC_API_KEY not set - AI features will be disabled');
     }
@@ -321,5 +328,139 @@ Be accurate and maintain the original meaning.`;
     };
 
     return `Summarize this text in ${language}. ${styleRequest[style] || styleRequest['bullet-points']}\n\nText:\n${text}`;
+  }
+
+  /**
+   * Save a summary to database
+   */
+  async saveSummary(userId: string, dto: CreateSummaryDto): Promise<SummaryResponseDto> {
+    const summary = this.summaryRepository.create({
+      userId,
+      ...dto,
+      sourceCharCount: dto.sourceText.length,
+      summaryCharCount: dto.summaryContent.length,
+    });
+
+    const saved = await this.summaryRepository.save(summary);
+    return this.mapToResponse(saved);
+  }
+
+  /**
+   * Get all summaries for a user
+   */
+  async getMySummaries(userId: string, page = 1, limit = 10): Promise<{ data: SummaryResponseDto[]; total: number }> {
+    const [summaries, total] = await this.summaryRepository.findAndCount({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+    });
+
+    return {
+      data: summaries.map(s => this.mapToResponse(s)),
+      total,
+    };
+  }
+
+  /**
+   * Get a specific summary
+   */
+  async getSummary(summaryId: string, userId: string): Promise<SummaryResponseDto> {
+    const summary = await this.summaryRepository.findOne({
+      where: { id: summaryId, userId },
+    });
+
+    if (!summary) {
+      throw new NotFoundException('Summary not found');
+    }
+
+    return this.mapToResponse(summary);
+  }
+
+  /**
+   * Delete a summary
+   */
+  async deleteSummary(summaryId: string, userId: string): Promise<void> {
+    const summary = await this.summaryRepository.findOne({
+      where: { id: summaryId, userId },
+    });
+
+    if (!summary) {
+      throw new NotFoundException('Summary not found');
+    }
+
+    await this.summaryRepository.delete(summaryId);
+  }
+
+  /**
+   * Get or migrate summary from audio result
+   * If audio already has a summary but it's not in the summaries table, migrate it
+   */
+  async getOrMigrateAudioSummary(audioResultId: string, userId: string, audioResult?: any): Promise<SummaryResponseDto | null> {
+    // First check if there's already a summary in the summaries table
+    const existing = await this.summaryRepository.findOne({
+      where: {
+        userId,
+        sourceFileName: audioResult?.fileName || '',
+      },
+      order: { createdAt: 'DESC' },
+    });
+
+    if (existing) {
+      return this.mapToResponse(existing);
+    }
+
+    // If audio result has a summary but it's not migrated, migrate it now
+    if (audioResult?.summary && audioResult.summary.trim().length > 0) {
+      this.logger.log(`Migrating audio summary for audioResultId ${audioResultId}`);
+      
+      const migratedSummary = this.summaryRepository.create({
+        userId,
+        title: (audioResult.fileName || `audio_${audioResultId}`).replace(/\.[^/.]+$/, ''),
+        sourceText: audioResult.transcription || 'Audio transcription',
+        summaryContent: audioResult.summary,
+        language: audioResult.language || 'es',
+        style: 'bullet-points',
+        sourceFileName: audioResult.fileName || `audio_${audioResultId}`,
+        sourceCharCount: (audioResult.transcription || '').length,
+        summaryCharCount: audioResult.summary.length,
+      });
+
+      const saved = await this.summaryRepository.save(migratedSummary);
+      this.logger.log(`Audio summary migrated successfully: ${saved.id}`);
+      return this.mapToResponse(saved);
+    }
+
+    return null;
+  }
+
+  /**
+   * Download summary content as text
+   */
+  async getSummaryContent(summaryId: string, userId: string): Promise<{ content: string; fileName: string }> {
+    const summary = await this.getSummary(summaryId, userId);
+
+    const fileName = `${summary.title.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.txt`;
+    const content = `${summary.title}\n${'='.repeat(summary.title.length)}\n\nGenerated: ${summary.createdAt.toLocaleString()}\nLanguage: ${summary.language}\nStyle: ${summary.style}\n\n${summary.summaryCharCount ? summary.summaryContent : ''}`;
+
+    return { content, fileName };
+  }
+
+  /**
+   * Map Summary entity to response DTO
+   */
+  private mapToResponse(summary: Summary): SummaryResponseDto {
+    return {
+      id: summary.id,
+      title: summary.title,
+      language: summary.language,
+      style: summary.style,
+      sourceCharCount: summary.sourceCharCount || 0,
+      summaryCharCount: summary.summaryCharCount || 0,
+      sourceFileName: summary.sourceFileName || '',
+      summaryContent: summary.summaryContent,
+      createdAt: summary.createdAt,
+      updatedAt: summary.updatedAt,
+    };
   }
 }

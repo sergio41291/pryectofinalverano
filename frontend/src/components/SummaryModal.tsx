@@ -9,7 +9,7 @@ import { ExistingFilesSection, type ExistingFile } from './ExistingFilesSection'
 interface SummaryModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSummaryStart?: (data: { uploadId: string; ocrText: string }) => void;
+  onSummaryStart?: (data: { uploadId: string; ocrText: string; fileName?: string; isExistingFile?: boolean }) => void;
   ocrState?: OcrProgressState;
   ocrReset?: () => void;
 }
@@ -79,6 +79,20 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
   const [otherFilesPage, setOtherFilesPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
 
+  // Para almacenar datos del OCR completado
+  const [completedOcrData, setCompletedOcrData] = useState<{
+    uploadId: string;
+    extractedText: string;
+  } | null>(null);
+
+  // Para rastrear si estamos usando un archivo existente
+  const [isExistingFileMode, setIsExistingFileMode] = useState(false);
+  const [existingFileData, setExistingFileData] = useState<{
+    uploadId: string;
+    fileName: string;
+    extractedText: string;
+  } | null>(null);
+
   // Usar estado global de OCR si está disponible
   const ocrProgress = ocrState || {
     step: 'idle' as const,
@@ -92,6 +106,33 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
       loadExistingFiles();
     }
   }, [isOpen, tab]);
+
+  // Obtener el texto extractado cuando el OCR está completado
+  useEffect(() => {
+    if (ocrProgress.step === 'completed' && uploadedFile && !completedOcrData) {
+      const fetchOcrResult = async () => {
+        try {
+          const result = await ocrService.getOcrResult(uploadedFile.id);
+          let extractedText = '';
+          if (typeof result.extractedText === 'string') {
+            extractedText = result.extractedText;
+          } else if (result.extractedText && typeof result.extractedText === 'object') {
+            const ext = result.extractedText as any;
+            extractedText = ext.text || '';
+          } else if (result.rawText) {
+            extractedText = result.rawText;
+          }
+          setCompletedOcrData({
+            uploadId: uploadedFile.id,
+            extractedText,
+          });
+        } catch (err) {
+          console.error('Error fetching OCR result:', err);
+        }
+      };
+      fetchOcrResult();
+    }
+  }, [ocrProgress.step, uploadedFile, completedOcrData]);
 
   // Polling para verificar el estado del audio
   useEffect(() => {
@@ -298,7 +339,48 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         setProcessingExisting(false);
         return;
       }
-
+      // PRIMERO: Verificar si ya existe un resumen en la tabla summaries
+      try {
+        const token = localStorage.getItem('authToken');
+        const summariesResponse = await fetch(`${API_CONFIG.apiUrl}/api/processing/summaries?page=1&limit=100`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (summariesResponse.ok) {
+          const summariesData = await summariesResponse.json();
+          const summaries = summariesData.data || [];
+          
+          // Buscar un resumen que coincida con este archivo
+          const fileName = file.originalName || file.name || `file_${uploadId}`;
+          const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
+          const existingSummary = summaries.find((s: any) => 
+            s.sourceFileName === fileName || 
+            s.title.includes(fileNameWithoutExt)
+          );
+          
+          if (existingSummary) {
+            console.log('✅ Found existing summary, no need to regenerate:', existingSummary);
+            
+            // Mostrar el resumen existente
+            setTab('new');
+            setUploadedFile(file);
+            setIsExistingFileMode(true);
+            setAudioTranscription(existingSummary.sourceText || '');
+            setAudioSummary(existingSummary.summaryContent);
+            setAudioProgress(100);
+            setProcessingExisting(false);
+            
+            // Mostrar mensaje informativo
+            setError(null);
+            return; // SALIR - No regenerar
+          }
+        }
+      } catch (err) {
+        console.warn('Error checking for existing summaries:', err);
+        // Continuar con el flujo normal si hay error
+      }
       const isAudio = file.mimeType?.includes('audio');
 
       if (isAudio) {
@@ -315,6 +397,26 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         }
 
         const audioResult = await response.json();
+        
+        // Si el audio tiene resumen, migrarlo automáticamente a la tabla summaries
+        if (audioResult.summary && audioResult.summary.trim().length > 0) {
+          try {
+            console.log('🔄 Migrating audio summary to summaries table...');
+            const { aiService } = await import('../services/aiService');
+            const fileName = file.originalName || file.name || `audio_${uploadId}`;
+            await aiService.saveSummary({
+              title: fileName.replace(/\.[^/.]+$/, ''),
+              sourceText: audioResult.transcription || 'Audio transcription',
+              summaryContent: audioResult.summary,
+              language: audioResult.language || 'es',
+              style: 'bullet-points',
+              sourceFileName: fileName,
+            });
+            console.log('✅ Audio summary migrated successfully');
+          } catch (migrateErr) {
+            console.warn('Failed to migrate audio summary:', migrateErr);
+          }
+        }
         
         // Establecer el archivo subido
         setUploadedFile(file);
@@ -444,6 +546,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
         // Cambiar al tab "new" para mostrar los resultados
         setTab('new');
         setUploadedFile(file);
+        setIsExistingFileMode(true);
         
         try {
           const ocrResult = await ocrService.getOcrResult(uploadId);
@@ -462,6 +565,13 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
             extractedTextValue = ocrResult.rawText;
           }
           
+          // Guardar datos del archivo existente
+          setExistingFileData({
+            uploadId,
+            fileName: file.originalName,
+            extractedText: extractedTextValue,
+          });
+          
           // Si existe el resultado, mostrar en el modal usando los campos de audio
           setAudioTranscription(extractedTextValue);
           setAudioSummary(summary || extractedTextValue);
@@ -478,6 +588,8 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           onSummaryStart?.({
             uploadId,
             ocrText: '',
+            fileName: file.originalName,
+            isExistingFile: true,
           });
         }
       }
@@ -612,6 +724,8 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
                         setUploadedFile(null);
                         setShowTextInput(false);
                         setManualText('');
+                        setIsExistingFileMode(false);
+                        setExistingFileData(null);
                       }}
                       className="w-full py-3 font-bold text-white transition-colors bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-2"
                     >
@@ -639,7 +753,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
                   </div>
 
                   {/* Botones de acción */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col gap-3">
                     <button 
                       onClick={() => {
                         // Descargar resumen como archivo
@@ -651,7 +765,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
                         element.click();
                         document.body.removeChild(element);
                       }}
-                      className="flex-1 py-3 font-bold text-white transition-colors bg-gradient-to-r from-green-600 to-green-700 rounded-xl hover:from-green-700 hover:to-green-800 flex items-center justify-center gap-2"
+                      className="w-full py-3 font-bold text-white transition-colors bg-gradient-to-r from-green-600 to-green-700 rounded-xl hover:from-green-700 hover:to-green-800 flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" />
                       Descargar Resumen
@@ -661,8 +775,10 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
                         ocrReset?.();
                         setShowTextInput(false);
                         setManualText('');
+                        setCompletedOcrData(null);
+                        setUploadedFile(null);
                       }}
-                      className="flex-1 py-3 font-bold text-white transition-colors bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-2"
+                      className="w-full py-3 font-bold text-white transition-colors bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl hover:from-blue-700 hover:to-indigo-700 flex items-center justify-center gap-2"
                     >
                       <RotateCw className="w-4 h-4" />
                       Procesar Otro

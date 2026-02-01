@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Copy, Download, Loader } from 'lucide-react';
+import { aiService } from '../services/aiService';
 
 interface AudioSummaryModalProps {
   isOpen: boolean;
   audioResultId: string;
+  audioFileName: string;
+  audioTranscription: string;
   onClose: () => void;
   onComplete?: (summary: string) => void;
 }
@@ -11,6 +14,8 @@ interface AudioSummaryModalProps {
 export function AudioSummaryModal({
   isOpen,
   audioResultId,
+  audioFileName,
+  audioTranscription,
   onClose,
   onComplete,
 }: AudioSummaryModalProps) {
@@ -18,6 +23,56 @@ export function AudioSummaryModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [existingSummary, setExistingSummary] = useState<any | null>(null);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+
+  // Check if summary already exists when modal opens
+  useEffect(() => {
+    if (isOpen && audioResultId && audioTranscription) {
+      checkExistingSummary();
+    } else if (!isOpen) {
+      // Reset when modal closes
+      setSummary('');
+      setExistingSummary(null);
+      setCheckingExisting(true);
+      setSaveMessage(null);
+      setError(null);
+    }
+  }, [isOpen, audioResultId, audioFileName]);
+
+  const checkExistingSummary = async () => {
+    try {
+      setCheckingExisting(true);
+      // Try to find existing summary by searching in summaries table
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/processing/summaries?page=1&limit=100`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const summaries = data.data || [];
+        // Look for a summary with matching filename
+        const existing = summaries.find((s: any) => 
+          s.sourceFileName === audioFileName || 
+          s.title.includes(audioFileName.replace(/\.[^/.]+$/, ''))
+        );
+        
+        if (existing) {
+          console.log('Found existing summary:', existing);
+          setExistingSummary(existing);
+          setSummary(existing.summaryContent);
+          setSaveMessage('✅ Este resumen ya existe en "Mis Resúmenes"');
+        }
+      }
+    } catch (err) {
+      console.error('Error checking existing summary:', err);
+    } finally {
+      setCheckingExisting(false);
+    }
+  };
 
   const handleGenerateSummary = async () => {
     setLoading(true);
@@ -72,6 +127,26 @@ export function AudioSummaryModal({
               }
               if (data.complete) {
                 onComplete?.(fullSummary);
+                
+                // Auto-guardar el resumen después de completar la generación
+                try {
+                  console.log('Auto-saving audio summary...');
+                  const title = audioFileName.replace(/\.[^/.]+$/, '') || `resumen_audio_${new Date().toISOString().slice(0, 10)}`;
+                  await aiService.saveSummary({
+                    title,
+                    sourceText: audioTranscription || 'Transcripción de audio',
+                    summaryContent: fullSummary,
+                    language: 'es',
+                    style: 'bullet-points',
+                    sourceFileName: audioFileName || 'audio',
+                  });
+                  console.log('Audio summary saved successfully');
+                  setSaveMessage('✅ Resumen guardado en "Mis Resúmenes"');
+                  setTimeout(() => setSaveMessage(null), 5000);
+                } catch (saveErr: any) {
+                  console.error('Error saving audio summary:', saveErr);
+                  setSaveMessage(`⚠️ Error al guardar: ${saveErr.message}`);
+                }
               }
             } catch (e) {
               // Ignorar errores de parseo
@@ -120,8 +195,27 @@ export function AudioSummaryModal({
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Generate Button */}
-          {!summary && (
+          {/* Checking Message */}
+          {checkingExisting && (
+            <div className="p-3 bg-blue-100 border border-blue-300 rounded-lg text-sm text-blue-800 flex items-center gap-2">
+              <Loader className="animate-spin" size={16} />
+              Verificando si ya existe un resumen...
+            </div>
+          )}
+
+          {/* Save Message */}
+          {saveMessage && (
+            <div className={`p-3 rounded-lg text-sm font-medium ${
+              saveMessage.includes('✅') 
+                ? 'bg-green-100 text-green-800 border border-green-300' 
+                : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+            }`}>
+              {saveMessage}
+            </div>
+          )}
+
+          {/* Generate Button - Only show if no summary exists */}
+          {!summary && !checkingExisting && (
             <button
               onClick={handleGenerateSummary}
               disabled={loading}

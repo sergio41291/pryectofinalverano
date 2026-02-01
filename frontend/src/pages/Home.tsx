@@ -10,6 +10,7 @@ import { AudioSummaryModal } from '../components/AudioSummaryModal';
 import { AudioQuestionnaireModal } from '../components/AudioQuestionnaireModal';
 import { QuestionnaireGeneratorModal } from '../components/QuestionnaireGeneratorModal';
 import { QuestionnairesList } from '../components/QuestionnairesList';
+import { Summaries } from './Summaries';
 import { aiService } from '../services/aiService';
 import { type AudioResult } from '../services/audioService';
 import { useOcrProgress } from '../hooks/useOcrProgress';
@@ -52,6 +53,7 @@ export function Home() {
   const [showAudioQuestionnaire, setShowAudioQuestionnaire] = useState(false);
   const [selectedAudioId, setSelectedAudioId] = useState<string>('');
   const [selectedAudioTranscription, setSelectedAudioTranscription] = useState<string>('');
+  const [selectedAudioFileName, setSelectedAudioFileName] = useState<string>('');
   const [showQuestionnaireGenerator, setShowQuestionnaireGenerator] = useState(false);
 
   const misArchivos = [
@@ -204,6 +206,8 @@ export function Home() {
                 onAIAction={(action, result) => {
                   if (action === 'summary') {
                     setSelectedAudioId(result.id);
+                    setSelectedAudioFileName(result.fileName || 'Audio');
+                    setSelectedAudioTranscription(result.transcription || '');
                     setShowAudioSummary(true);
                   } else if (action === 'quiz') {
                     setSelectedAudioId(result.id);
@@ -233,7 +237,10 @@ export function Home() {
             {summaryResult && (
               <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-2xl">
                 <div className="flex items-start justify-between mb-4">
-                  <h3 className="text-lg font-bold text-gray-900">📋 Resumen Generado</h3>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">📋 Resumen Generado</h3>
+                    <p className="text-sm text-green-700 mt-1">✓ Se guardó automáticamente en "Mis Resúmenes"</p>
+                  </div>
                   <button
                     onClick={() => setGeneratedSummary(null)}
                     className="text-gray-400 hover:text-gray-600"
@@ -331,6 +338,9 @@ export function Home() {
           </div>
         );
 
+      case 'resumenes':
+        return <Summaries />;
+
       default:
         return null;
     }
@@ -406,6 +416,26 @@ export function Home() {
               fullSummary += chunk;
               setGeneratedSummary(fullSummary);
             }
+
+            // Guardar el resumen automáticamente después de generarlo
+            let savedSuccessfully = false;
+            try {
+              const fileName = data.fileName || `resumen_${new Date().toISOString().slice(0, 10)}`;
+              const result = await aiService.saveSummary({
+                title: fileName.replace(/\.[^/.]+$/, ''), // Eliminar extensión
+                sourceText: data.ocrText,
+                summaryContent: fullSummary,
+                language: 'es',
+                style: 'bullet-points',
+                sourceFileName: fileName,
+              });
+              console.log('Summary saved successfully:', result);
+              savedSuccessfully = true;
+            } catch (saveErr: any) {
+              console.error('Error saving summary:', saveErr);
+              const errorMsg = saveErr.response?.data?.message || saveErr.message || 'Error al guardar el resumen';
+              setSummaryError(`Resumen generado pero no se pudo guardar: ${errorMsg}`);
+            }
           } catch (err) {
             setSummaryError(err instanceof Error ? err.message : 'Error al generar el resumen');
             console.error('Summary error:', err);
@@ -415,9 +445,13 @@ export function Home() {
         }}
       />
       <AudioSummaryModal
-        isOpen={showAudioSummary}
-        audioResultId={selectedAudioId}
+        audioFileName={selectedAudioFileName}
+        audioTranscription={selectedAudioTranscription}
         onClose={() => {
+          setShowAudioSummary(false);
+          setSelectedAudioId('');
+          setSelectedAudioFileName('');
+          setSelectedAudioTranscription
           setShowAudioSummary(false);
           setSelectedAudioId('');
         }}
