@@ -376,7 +376,7 @@ export function MindMapModal({ isOpen, onClose, onMindMapGenerated, ocrState, oc
               <div className="bg-white border border-gray-200 rounded-xl p-6">
                 <h4 className="font-bold text-gray-900 mb-4">Vista Previa:</h4>
                 <div className="h-[500px] border border-gray-200 rounded-lg overflow-hidden">
-                  <MindMapVisualization structure={generatedMindMap} />
+                  <MindMapVisualization structure={generatedMindMap} readOnly={true} />
                 </div>
               </div>
 

@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Put,
   Body,
   Param,
   Query,
@@ -136,6 +137,33 @@ export class MindMapsController {
       };
     } catch (error: any) {
       this.logger.error(`Delete mind map error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Update node positions
+   * PUT /api/mind-maps/:id/positions
+   */
+  @Put(':id/positions')
+  async updatePositions(
+    @Param('id') id: string,
+    @Body() body: { nodes: any[] },
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const mindMap = await this.mindMapsService.updateMindMapPositions(
+        id,
+        req.user.id,
+        body.nodes,
+      );
+      
+      return {
+        success: true,
+        data: mindMap,
+      };
+    } catch (error: any) {
+      this.logger.error(`Update positions error: ${error.message}`);
       throw error;
     }
   }

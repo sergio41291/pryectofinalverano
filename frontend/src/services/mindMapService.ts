@@ -107,6 +107,14 @@ export const mindMapService = {
     link.parentNode?.removeChild(link);
     window.URL.revokeObjectURL(url);
   },
+
+  /**
+   * Update node positions
+   */
+  async updateMindMapPositions(id: string, nodes: MindMapNode[]): Promise<{ success: boolean; data: MindMap }> {
+    const response = await api.put(`/mind-maps/${id}/positions`, { nodes });
+    return response.data;
+  },
 };
 
 export default mindMapService;

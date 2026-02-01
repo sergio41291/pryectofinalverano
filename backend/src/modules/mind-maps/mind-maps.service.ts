@@ -134,6 +134,9 @@ Remember: Return ONLY the JSON structure, no explanations.`;
         generatedAt: new Date(),
       };
 
+      // Recalculate positions to ensure no overlapping
+      this.recalculatePositions(structure);
+
       this.logger.log(`Mind map generated: ${structure.nodes.length} nodes, ${structure.edges.length} edges`);
 
       return structure;
@@ -218,7 +221,78 @@ Remember: Return ONLY the JSON structure, no explanations.`;
 
     await this.mindMapRepository.delete(id);
   }
+  async updateMindMapPositions(id: string, userId: string, nodes: any[]): Promise<MindMap> {
+    const mindMap = await this.mindMapRepository.findOne({
+      where: { id, user: { id: userId } },
+    });
 
+    if (!mindMap) {
+      throw new NotFoundException('Mind map not found');
+    }
+
+    // Update node positions in structure
+    const structure = mindMap.structure as any;
+    structure.nodes = structure.nodes.map((node: any) => {
+      const updatedNode = nodes.find((n: any) => n.id === node.id);
+      if (updatedNode && updatedNode.position) {
+        return { ...node, position: updatedNode.position };
+      }
+      return node;
+    });
+
+    mindMap.structure = structure;
+    return await this.mindMapRepository.save(mindMap);
+  }
+
+  private recalculatePositions(structure: MindMapStructure): void {
+    // Group nodes by level
+    const nodesByLevel: { [key: number]: any[] } = {};
+    structure.nodes.forEach(node => {
+      const level = node.level || 0;
+      if (!nodesByLevel[level]) {
+        nodesByLevel[level] = [];
+      }
+      nodesByLevel[level].push(node);
+    });
+
+    const levels = Object.keys(nodesByLevel).map(Number).sort((a, b) => a - b);
+    const HORIZONTAL_SPACING = 320;
+    const VERTICAL_SPACING = 180;
+    const NODE_WIDTH = 200;
+
+    levels.forEach(level => {
+      const nodes = nodesByLevel[level];
+      const y = 50 + level * VERTICAL_SPACING;
+
+      if (level === 0) {
+        // Root node - center
+        nodes[0].position = { x: 500, y: 50 };
+      } else {
+        // Calculate total width needed
+        const totalWidth = (nodes.length - 1) * HORIZONTAL_SPACING;
+        const startX = 500 - totalWidth / 2;
+
+        // Distribute nodes evenly
+        nodes.forEach((node, index) => {
+          node.position = {
+            x: startX + index * HORIZONTAL_SPACING,
+            y: y
+          };
+        });
+
+        // Check for overlaps and adjust
+        for (let i = 1; i < nodes.length; i++) {
+          const prevNode = nodes[i - 1];
+          const currentNode = nodes[i];
+          const minDistance = NODE_WIDTH + 50;
+
+          if (currentNode.position.x - prevNode.position.x < minDistance) {
+            currentNode.position.x = prevNode.position.x + minDistance;
+          }
+        }
+      }
+    });
+  }
   /**
    * Get mind map content for download
    */

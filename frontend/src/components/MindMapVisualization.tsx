@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import ReactFlow, {
   Background,
   Controls,
@@ -8,13 +8,17 @@ import ReactFlow, {
   MarkerType,
   type Node,
   type Edge,
+  type NodeChange,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import type { MindMapStructure } from '../services/mindMapService';
+import { mindMapService } from '../services/mindMapService';
 
 interface MindMapVisualizationProps {
   structure: MindMapStructure;
   title?: string;
+  mindMapId?: string; // ID del mapa mental para guardar cambios
+  readOnly?: boolean; // Si es true, no se guardan los cambios
 }
 
 const nodeColors = {
@@ -38,7 +42,12 @@ const nodeColors = {
 export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
   structure,
   title,
+  mindMapId,
+  readOnly = false,
 }) => {
+  const saveTimeoutRef = useRef<number | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
+
   // Convert mind map structure to React Flow format
   const convertToReactFlowNodes = useCallback((): Node[] => {
     return structure.nodes.map((node) => {
@@ -92,8 +101,62 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
     }));
   }, [structure.edges]);
 
-  const [nodes] = useNodesState(convertToReactFlowNodes());
+  const [nodes, setNodes, onNodesChange] = useNodesState(convertToReactFlowNodes());
   const [edges] = useEdgesState(convertToReactFlowEdges());
+
+  // Save positions to backend with debounce
+  const savePositions = useCallback(async (updatedNodes: Node[]) => {
+    if (!mindMapId || readOnly) return;
+
+    try {
+      setIsSaving(true);
+      const nodesToSave = updatedNodes.map(node => ({
+        id: node.id,
+        position: node.position,
+      }));
+
+      await mindMapService.updateMindMapPositions(mindMapId, nodesToSave as any);
+      console.log('Positions saved successfully');
+    } catch (error) {
+      console.error('Error saving positions:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [mindMapId, readOnly]);
+
+  // Handle node position changes with debounce
+  const handleNodesChange = useCallback((changes: NodeChange[]) => {
+    onNodesChange(changes);
+
+    // Check if there's a position change
+    const hasPositionChange = changes.some(
+      change => change.type === 'position' && change.dragging === false
+    );
+
+    if (hasPositionChange && !readOnly && mindMapId) {
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+
+      // Set new timeout to save after 1 second of no changes
+      saveTimeoutRef.current = setTimeout(() => {
+        setNodes(currentNodes => {
+          savePositions(currentNodes);
+          return currentNodes;
+        });
+      }, 1000);
+    }
+  }, [onNodesChange, readOnly, mindMapId, savePositions, setNodes]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -110,12 +173,22 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
         </div>
       )}
       
-      <div style={{ width: '100%', height: '600px' }}>
+      <div style={{ width: '100%', height: '600px', position: 'relative' }}>
+        {isSaving && (
+          <div className="absolute top-4 right-4 z-10 bg-green-100 text-green-800 px-3 py-1.5 rounded-lg shadow-md text-sm font-medium flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Guardando posiciones...
+          </div>
+        )}
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          onNodesChange={handleNodesChange}
           fitView
-          nodesDraggable={true}
+          nodesDraggable={!readOnly}
           nodesConnectable={false}
           elementsSelectable={true}
           attributionPosition="bottom-left"
@@ -176,8 +249,8 @@ export const MindMapVisualization: React.FC<MindMapVisualizationProps> = ({
       {/* Controls Help */}
       <div className="px-6 py-3 bg-blue-50 border-t border-blue-200">
         <p className="text-sm text-blue-800">
-          💡 <strong>Controles:</strong> Arrastra los nodos para reorganizarlos. Usa la rueda del mouse para hacer zoom. 
-          Haz clic y arrastra el fondo para mover el mapa completo.
+          💡 <strong>Controles:</strong> Arrastra los nodos para reorganizarlos{!readOnly && ' (se guardan automáticamente)'}. 
+          Usa la rueda del mouse para hacer zoom. Haz clic y arrastra el fondo para mover el mapa completo.
         </p>
       </div>
     </div>

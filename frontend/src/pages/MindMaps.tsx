@@ -44,6 +44,7 @@ export const MindMaps: React.FC = () => {
             <MindMapVisualization
               structure={viewingMindMap.structure}
               title={viewingMindMap.title}
+              mindMapId={viewingMindMap.id}
             />
           </div>
         ) : (

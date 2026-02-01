@@ -84,7 +84,7 @@
 
 - [x] Crear `frontend/src/pages/MindMaps.tsx`
   - [x] Layout principal
-  - [x] Tabs: Generar | Mis Mapas
+  - [x] Refactorizado: Solo mostrar lista de guardados (sin tab Generar)
 
 **Frontend - Servicios**
 - [x] Crear `frontend/src/services/mindMapService.ts`
@@ -98,6 +98,31 @@
 - [x] Actualizar `Sidebar.tsx`
   - [x] Agregar item "Mapas Mentales" con ícono Network
   - [x] Navegación a sección
+
+**Frontend - Refactorización IA Lab (COMPLETADO)**
+- [x] Crear `frontend/src/components/MindMapModal.tsx`
+  - [x] Seguir patrón de SummaryModal
+  - [x] Tab Nuevo Archivo: Drag & drop, upload PDF/Image/Audio
+  - [x] Tab Archivos Existentes: Seleccionar archivos ya procesados
+  - [x] Integración con OCR y transcripción de audio
+  - [x] Generar mapa mental desde texto extraído
+  - [x] Mostrar vista previa del mapa generado
+
+- [x] Actualizar `frontend/src/pages/Home.tsx`
+  - [x] Agregar estado `isMindMapModalOpen`
+  - [x] Agregar card "Mapas Mentales" en sección IA Lab
+  - [x] Grid de 3 columnas (Resumen, Cuestionario, Mapas Mentales)
+  - [x] Botón "Probar ahora" con hover effect
+  - [x] Color morado/purple para card
+  - [x] Icono Network
+  - [x] Agregar MindMapModal al final con otros modales
+
+- [x] Modificar `frontend/src/pages/MindMaps.tsx`
+  - [x] Eliminar MindMapGenerator import y uso
+  - [x] Quitar tab "Generar"
+  - [x] Solo mostrar MindMapsList (visualización de guardados)
+  - [x] Actualizar descripción: "Visualiza y gestiona tus mapas mentales guardados"
+  - [x] Info box: Indicar que generación se hace desde IA Lab
 
 - [x] Actualizar `Home.tsx`
   - [x] Case 'mapas-mentales' en renderContenido()
