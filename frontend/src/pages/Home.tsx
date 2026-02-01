@@ -11,6 +11,7 @@ import { AudioQuestionnaireModal } from '../components/AudioQuestionnaireModal';
 import { QuestionnaireGeneratorModal } from '../components/QuestionnaireGeneratorModal';
 import { QuestionnairesList } from '../components/QuestionnairesList';
 import { Summaries } from './Summaries';
+import { MindMaps } from './MindMaps';
 import { aiService } from '../services/aiService';
 import { type AudioResult } from '../services/audioService';
 import { useOcrProgress } from '../hooks/useOcrProgress';
@@ -340,6 +341,9 @@ export function Home() {
 
       case 'resumenes':
         return <Summaries />;
+
+      case 'mapas-mentales':
+        return <MindMaps />;
 
       default:
         return null;
