@@ -90,13 +90,9 @@ echo -e "\n${YELLOW}[6/9] Configurando backend...${NC}"
 
 cd "${BACKEND_DIR}"
 
-# Install dependencies (solo si no existen)
-if [ ! -d "node_modules" ]; then
-    echo "Instalando dependencias del backend (incluyendo devDependencies para build)..."
-    npm install --legacy-peer-deps
-else
-    echo "Dependencias del backend ya instaladas"
-fi
+# Always install dependencies in deployment (includes devDependencies for build)
+echo "Instalando dependencias del backend..."
+npm install --legacy-peer-deps
 
 # Build backend
 echo "Compilando backend..."
@@ -113,13 +109,9 @@ echo -e "\n${YELLOW}[7/9] Configurando frontend...${NC}"
 
 cd "${FRONTEND_DIR}"
 
-# Install dependencies (solo si no existen)
-if [ ! -d "node_modules" ]; then
-    echo "Instalando dependencias del frontend (incluyendo devDependencies para build)..."
-    npm install --legacy-peer-deps
-else
-    echo "Dependencias del frontend ya instaladas"
-fi
+# Always install dependencies in deployment (includes devDependencies for build)
+echo "Instalando dependencias del frontend..."
+npm install --legacy-peer-deps
 
 # Build frontend
 echo "Compilando frontend..."
