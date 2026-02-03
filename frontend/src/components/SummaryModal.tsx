@@ -20,47 +20,13 @@ const ALLOWED_TYPES = {
   audio: { mime: ['audio/mpeg', 'audio/wav', 'audio/ogg'], icon: Music, label: 'Audio' },
 };
 
-// Helper function to format file size
-const formatFileSize = (bytes: number): string => {
-  if (bytes === 0) return '0 B';
-  const k = 1024;
-  const sizes = ['B', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-};
-
-// Helper function to format date in Spanish
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  };
-  return date.toLocaleDateString('es-ES', options);
-};
-
-// Helper function to get file type label
-const getFileTypeLabel = (mimeType: string): string => {
-  if (mimeType.includes('pdf')) return 'Documento PDF';
-  if (mimeType.includes('image')) return 'Imagen';
-  if (mimeType.includes('audio') || mimeType.includes('mpeg')) return 'Archivo de Audio';
-  if (mimeType.includes('video')) return 'Video';
-  if (mimeType.includes('word') || mimeType.includes('document')) return 'Documento Word';
-  if (mimeType.includes('spreadsheet') || mimeType.includes('sheet')) return 'Hoja de Cálculo';
-  return 'Documento';
-};
-
 export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrReset }: SummaryModalProps) {
   const [tab, setTab] = useState<'new' | 'existing'>('new');
   const [isUploading, setIsUploading] = useState(false);
-  const [isLoadingFiles, setIsLoadingFiles] = useState(false);
+  const [, setIsLoadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [existingFiles, setExistingFiles] = useState<UploadType[]>([]);
-  const [processingExisting, setProcessingExisting] = useState(false);
+  const [, setProcessingExisting] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [manualText, setManualText] = useState<string>('');
   const [showTextInput, setShowTextInput] = useState(false);
@@ -74,22 +40,9 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
   const [audioSummary, setAudioSummary] = useState<string>('');
   const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
-  // Para paginación de archivos
-  const [audioFilesPage, setAudioFilesPage] = useState(1);
-  const [otherFilesPage, setOtherFilesPage] = useState(1);
-  const ITEMS_PER_PAGE = 6;
-
   // Para almacenar datos del OCR completado
   const [completedOcrData, setCompletedOcrData] = useState<{
     uploadId: string;
-    extractedText: string;
-  } | null>(null);
-
-  // Para rastrear si estamos usando un archivo existente
-  const [isExistingFileMode, setIsExistingFileMode] = useState(false);
-  const [existingFileData, setExistingFileData] = useState<{
-    uploadId: string;
-    fileName: string;
     extractedText: string;
   } | null>(null);
 

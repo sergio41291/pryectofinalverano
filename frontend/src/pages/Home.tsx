@@ -59,7 +59,7 @@ export function Home() {
   const [viewingAudio, setViewingAudio] = useState<AudioResult | null>(null);
   
   // IA Lab States
-  const [, setShowAudioSummary] = useState(false);
+  const [showAudioSummary, setShowAudioSummary] = useState(false);
   const [showAudioQuestionnaire, setShowAudioQuestionnaire] = useState(false);
   const [selectedAudioId, setSelectedAudioId] = useState<string>('');
   const [selectedAudioTranscription, setSelectedAudioTranscription] = useState<string>('');
@@ -480,6 +480,7 @@ export function Home() {
 
             // Guardar el resumen automáticamente después de generarlo
             // Guardar en backend
+            let savedSuccessfully = false;
             try {
               const fileName = data.fileName || `resumen_${new Date().toISOString().slice(0, 10)}`;
               const result = await aiService.saveSummary({

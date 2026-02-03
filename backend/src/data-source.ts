@@ -1,5 +1,10 @@
 import 'reflect-metadata';
+import { config } from 'dotenv';
 import { DataSource } from 'typeorm';
+
+// Load .env file
+config();
+
 import { User } from './modules/users/entities/user.entity';
 import { Subscription } from './modules/subscriptions/entities/subscription.entity';
 import { Upload } from './modules/uploads/entities/upload.entity';
