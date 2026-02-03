@@ -8,10 +8,9 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../modules/users/entities/user.entity';
-import { Group } from './group.entity';
 
-@Entity('summaries')
-export class Summary {
+@Entity('translations')
+export class Translation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -26,35 +25,25 @@ export class Summary {
   title: string;
 
   @Column('text')
-  sourceText: string;
+  originalText: string;
 
   @Column('text')
-  summaryContent: string;
+  translatedText: string;
 
-  @Column('varchar', { length: 50 })
-  language: string;
+  @Column('varchar', { length: 10 })
+  sourceLanguage: string;
 
-  @Column('varchar', { length: 50 })
-  style: 'bullet-points' | 'paragraph' | 'executive';
+  @Column('varchar', { length: 10 })
+  targetLanguage: string;
 
   @Column('varchar', { length: 255, nullable: true })
   sourceFileName?: string;
 
   @Column('integer', { nullable: true })
-  sourceCharCount?: number;
+  originalCharCount?: number;
 
   @Column('integer', { nullable: true })
-  summaryCharCount?: number;
-
-  @Column('varchar', { length: 255, nullable: true })
-  minionPath?: string; // Path en MinIO
-
-  @Column('uuid', { nullable: true })
-  groupId: string | null;
-
-  @ManyToOne(() => Group, { nullable: true })
-  @JoinColumn({ name: 'groupId' })
-  group: Group;
+  translatedCharCount?: number;
 
   @CreateDateColumn()
   createdAt: Date;

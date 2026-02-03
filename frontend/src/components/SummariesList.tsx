@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Download, Trash2, Loader } from 'lucide-react';
+import { Download, Trash2, Loader, Users } from 'lucide-react';
+import { ShareSummaryWithGroupModal } from './ShareSummaryWithGroupModal';
 
 interface Summary {
   id: string;
@@ -12,6 +13,7 @@ interface Summary {
   sourceFileName: string;
   createdAt: string;
   updatedAt: string;
+  groupId?: string | null;
 }
 
 interface SummariesListProps {
@@ -26,6 +28,8 @@ export const SummariesList: React.FC<SummariesListProps> = ({ refreshTrigger }) 
   const [total, setTotal] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedSummary, setSelectedSummary] = useState<Summary | null>(null);
 
   const limit = 10;
 
@@ -93,6 +97,15 @@ export const SummariesList: React.FC<SummariesListProps> = ({ refreshTrigger }) 
     } finally {
       setDeleting(null);
     }
+  };
+
+  const openShareModal = (summary: Summary) => {
+    setSelectedSummary(summary);
+    setShareModalOpen(true);
+  };
+
+  const handleShareSuccess = () => {
+    fetchSummaries();
   };
 
   const formatDate = (dateString: string) => {
@@ -169,6 +182,17 @@ export const SummariesList: React.FC<SummariesListProps> = ({ refreshTrigger }) 
 
                   <div className="flex gap-2 ml-4">
                     <button
+                      onClick={() => openShareModal(summary)}
+                      className={`p-2 rounded-lg transition-colors ${
+                        summary.groupId 
+                          ? 'text-green-600 bg-green-100 hover:bg-green-200' 
+                          : 'text-orange-600 hover:bg-orange-50'
+                      }`}
+                      title={summary.groupId ? 'Compartido con grupo' : 'Compartir con grupo'}
+                    >
+                      <Users className="w-5 h-5" />
+                    </button>
+                    <button
                       onClick={() => handleDownload(summary.id, summary.title)}
                       disabled={downloading === summary.id}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
@@ -223,6 +247,20 @@ export const SummariesList: React.FC<SummariesListProps> = ({ refreshTrigger }) 
             </div>
           )}
         </>
+      )}
+
+      {selectedSummary && (
+        <ShareSummaryWithGroupModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedSummary(null);
+          }}
+          summaryId={selectedSummary.id}
+          summaryTitle={selectedSummary.title}
+          currentGroupId={selectedSummary.groupId || null}
+          onSuccess={handleShareSuccess}
+        />
       )}
     </div>
   );

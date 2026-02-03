@@ -41,6 +41,7 @@ export interface MindMap {
   structure: MindMapStructure;
   createdAt: Date;
   updatedAt: Date;
+  groupId?: string | null;
 }
 
 export interface GenerateMindMapRequest {

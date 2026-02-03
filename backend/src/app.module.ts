@@ -12,6 +12,9 @@ import { AudioModule } from './modules/audio/audio.module';
 import { AiModule } from './modules/ai/ai.module';
 import { QuestionnairesModule } from './modules/questionnaires/questionnaires.module';
 import { MindMapsModule } from './modules/mind-maps/mind-maps.module';
+import { GroupsModule } from './modules/groups/groups.module';
+import { TranslationsModule } from './modules/translations/translations.module';
+import { TextToSpeechModule } from './modules/text-to-speech/text-to-speech.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -24,6 +27,8 @@ import { QuestionnaireResponse } from './entities/questionnaire-response.entity'
 import { QuestionnaireShare } from './entities/questionnaire-share.entity';
 import { Summary } from './entities/summary.entity';
 import { MindMap } from './entities/mind-map.entity';
+import { Group } from './entities/group.entity';
+import { GroupMember } from './entities/group-member.entity';
 
 @Module({
   imports: [
@@ -50,7 +55,7 @@ import { MindMap } from './entities/mind-map.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap, Group, GroupMember],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -65,6 +70,9 @@ import { MindMap } from './entities/mind-map.entity';
     AiModule,
     QuestionnairesModule,
     MindMapsModule,
+    GroupsModule,
+    TranslationsModule,
+    TextToSpeechModule,
   ],
   controllers: [AppController],
   providers: [AppService],

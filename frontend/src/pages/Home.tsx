@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { UploadModal } from '../components/UploadModal';
 import { SummaryModal } from '../components/SummaryModal';
+import { TranslateModal } from '../components/TranslateModal';
 import { MindMapModal } from '../components/MindMapModal';
 import { AudioUploadModal } from '../components/AudioUploadModal';
 import { AudioViewModal } from '../components/AudioViewModal';
@@ -13,6 +14,8 @@ import { QuestionnaireGeneratorModal } from '../components/QuestionnaireGenerato
 import { QuestionnairesList } from '../components/QuestionnairesList';
 import { Summaries } from './Summaries';
 import { MindMaps } from './MindMaps';
+import { Translations } from './Translations';
+import { Groups } from './Groups';
 import { aiService } from '../services/aiService';
 import { type AudioResult } from '../services/audioService';
 import { useOcrProgress } from '../hooks/useOcrProgress';
@@ -32,6 +35,7 @@ import {
   X,
   Headphones,
   Network,
+  Languages,
 } from 'lucide-react';
 
 export function Home() {
@@ -43,6 +47,7 @@ export function Home() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isAudioModalOpen, setIsAudioModalOpen] = useState(false);
   const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
+  const [isTranslateModalOpen, setIsTranslateModalOpen] = useState(false);
   const [isMindMapModalOpen, setIsMindMapModalOpen] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [summaryResult, setGeneratedSummary] = useState<string | null>(null);
@@ -324,6 +329,18 @@ export function Home() {
                   <span className="hidden group-hover:inline">Probar ahora</span>
                 </button>
               </div>
+              <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl transition-all hover:shadow-md hover:border-indigo-300 cursor-pointer group">
+                <h3 className="mb-2 font-sans text-xl font-bold text-gray-900">Traducir</h3>
+                <p className="mb-4 text-sm text-gray-600">Traduce documentos y texto a más de 10 idiomas.</p>
+                <button
+                  onClick={() => setIsTranslateModalOpen(true)}
+                  className="px-6 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                >
+                  <Languages size={16} />
+                  <span className="group-hover:hidden">Empezar</span>
+                  <span className="hidden group-hover:inline">Probar ahora</span>
+                </button>
+              </div>
             </div>
           </div>
         );
@@ -340,6 +357,9 @@ export function Home() {
             </div>
           </div>
         );
+
+      case 'grupos':
+        return <Groups />;
 
       case 'cuestionarios':
         return (
@@ -359,6 +379,9 @@ export function Home() {
 
       case 'mapas-mentales':
         return <MindMaps />;
+
+      case 'traducciones':
+        return <Translations />;
 
       default:
         return null;
@@ -476,6 +499,16 @@ export function Home() {
           console.log('Mind map generated:', mindMap);
           // No cerrar el modal - dejar que el usuario vea la vista previa
         }}
+      />
+
+      <TranslateModal
+        isOpen={isTranslateModalOpen}
+        onClose={() => {
+          setIsTranslateModalOpen(false);
+          reset();
+        }}
+        ocrState={state}
+        ocrReset={reset}
       />
 
       <AudioSummaryModal

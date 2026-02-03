@@ -141,6 +141,25 @@ export class QuestionnairesController {
     return this.questionnairesService.delete(id, req.user.id);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/share-with-group/:groupId')
+  shareWithGroup(
+    @Request() req: ExpressRequest & { user: any },
+    @Param('id') questionnaireId: string,
+    @Param('groupId') groupId: string,
+  ) {
+    return this.questionnairesService.shareWithGroup(questionnaireId, groupId, req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(':id/unshare-from-group')
+  unshareFromGroup(
+    @Request() req: ExpressRequest & { user: any },
+    @Param('id') questionnaireId: string,
+  ) {
+    return this.questionnairesService.unshareFromGroup(questionnaireId, req.user.id);
+  }
+
   @Post(':id/responses')
   submitResponse(
     @Param('id') questionnaireId: string,

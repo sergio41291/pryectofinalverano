@@ -393,6 +393,38 @@ Be accurate and maintain the original meaning.`;
   }
 
   /**
+   * Share summary with group
+   */
+  async shareWithGroup(summaryId: string, groupId: string, userId: string): Promise<Summary> {
+    const summary = await this.summaryRepository.findOne({
+      where: { id: summaryId, userId },
+    });
+
+    if (!summary) {
+      throw new NotFoundException('Summary not found');
+    }
+
+    summary.groupId = groupId;
+    return await this.summaryRepository.save(summary);
+  }
+
+  /**
+   * Unshare summary from group
+   */
+  async unshareFromGroup(summaryId: string, userId: string): Promise<Summary> {
+    const summary = await this.summaryRepository.findOne({
+      where: { id: summaryId, userId },
+    });
+
+    if (!summary) {
+      throw new NotFoundException('Summary not found');
+    }
+
+    summary.groupId = null;
+    return await this.summaryRepository.save(summary);
+  }
+
+  /**
    * Get or migrate summary from audio result
    * If audio already has a summary but it's not in the summaries table, migrate it
    */

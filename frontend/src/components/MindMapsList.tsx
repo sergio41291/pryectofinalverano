@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Trash2, Loader, Eye, Calendar, Hash } from 'lucide-react';
+import { Download, Trash2, Loader, Eye, Calendar, Hash, Users } from 'lucide-react';
 import { mindMapService, type MindMap } from '../services/mindMapService';
+import { ShareMindMapWithGroupModal } from './ShareMindMapWithGroupModal';
 
 interface MindMapsListProps {
   refreshTrigger?: number;
@@ -15,6 +16,8 @@ export const MindMapsList: React.FC<MindMapsListProps> = ({ refreshTrigger, onVi
   const [total, setTotal] = useState(0);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedMindMap, setSelectedMindMap] = useState<MindMap | null>(null);
 
   const limit = 9;
 
@@ -62,6 +65,15 @@ export const MindMapsList: React.FC<MindMapsListProps> = ({ refreshTrigger, onVi
     } finally {
       setDownloading(null);
     }
+  };
+
+  const handleOpenShareModal = (mindMap: MindMap) => {
+    setSelectedMindMap(mindMap);
+    setShareModalOpen(true);
+  };
+
+  const handleShareSuccess = () => {
+    fetchMindMaps();
   };
 
   const formatDate = (dateString: string) => {
@@ -156,6 +168,17 @@ export const MindMapsList: React.FC<MindMapsListProps> = ({ refreshTrigger, onVi
                     Ver
                   </button>
                   <button
+                    onClick={() => handleOpenShareModal(mindMap)}
+                    className={`p-2 rounded-lg transition-colors ${
+                      mindMap.groupId
+                        ? 'text-green-600 hover:bg-green-50'
+                        : 'text-orange-600 hover:bg-orange-50'
+                    }`}
+                    title={mindMap.groupId ? "Compartido con grupo" : "Compartir con grupo"}
+                  >
+                    <Users className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleDownload(mindMap.id, mindMap.title)}
                     disabled={downloading === mindMap.id}
                     className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50"
@@ -209,6 +232,21 @@ export const MindMapsList: React.FC<MindMapsListProps> = ({ refreshTrigger, onVi
             </div>
           )}
         </>
+      )}
+
+      {/* Share with Group Modal */}
+      {selectedMindMap && (
+        <ShareMindMapWithGroupModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setSelectedMindMap(null);
+          }}
+          mindMapId={selectedMindMap.id}
+          mindMapTitle={selectedMindMap.title}
+          currentGroupId={selectedMindMap.groupId}
+          onSuccess={handleShareSuccess}
+        />
       )}
     </div>
   );

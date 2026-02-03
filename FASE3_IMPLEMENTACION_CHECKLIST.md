@@ -131,25 +131,25 @@
 ### 📊 Día 4-5: Base de Datos para Grupos
 
 **Backend - Entidades**
-- [ ] Crear `backend/src/entities/group.entity.ts`
-  - [ ] Campos: id, name, description, ownerId, createdAt, updatedAt
-  - [ ] Relación con User (ManyToOne)
-  - [ ] Relación con GroupMember (OneToMany)
+- [x] Crear `backend/src/entities/group.entity.ts`
+  - [x] Campos: id, name, description, ownerId, createdAt, updatedAt
+  - [x] Relación con User (ManyToOne)
+  - [x] Relación con GroupMember (OneToMany)
 
-- [ ] Crear `backend/src/entities/group-member.entity.ts`
-  - [ ] Campos: id, groupId, userId, role, permissions, joinedAt
-  - [ ] Enum roles: 'owner' | 'admin' | 'member'
-  - [ ] Relación con Group (ManyToOne)
-  - [ ] Relación con User (ManyToOne)
+- [x] Crear `backend/src/entities/group-member.entity.ts`
+  - [x] Campos: id, groupId, userId, role, permissions, joinedAt
+  - [x] Enum roles: 'owner' | 'admin' | 'member'
+  - [x] Relación con Group (ManyToOne)
+  - [x] Relación con User (ManyToOne)
 
-- [ ] Crear migration `1743800000000-CreateGroupsAndMembers.ts`
-  - [ ] Tabla groups
-  - [ ] Tabla group_members
-  - [ ] Índices
-  - [ ] Foreign keys
+- [x] Crear migration `1743800000000-CreateGroupsAndMembers.ts`
+  - [x] Tabla groups
+  - [x] Tabla group_members
+  - [x] Índices
+  - [x] Foreign keys
 
-- [ ] Actualizar `app.module.ts` y `data-source.ts`
-  - [ ] Agregar Group y GroupMember
+- [x] Actualizar `app.module.ts` y `data-source.ts`
+  - [x] Agregar Group y GroupMember
 
 **Backend - Seeds (Opcional)**
 - [ ] Crear `backend/scripts/seed-groups.ts`

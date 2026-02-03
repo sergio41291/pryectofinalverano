@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Download, Trash2, Share2, BarChart3, Loader } from 'lucide-react';
+import { Download, Trash2, Share2, BarChart3, Loader, Users } from 'lucide-react';
 import { ShareModal } from './ShareModal';
 import { StatsModal } from './StatsModal';
+import { ShareWithGroupModal } from './ShareWithGroupModal';
 import api from '../services/api';
 
 interface Questionnaire {
@@ -13,6 +14,7 @@ interface Questionnaire {
   averageScore: number | string;
   createdAt: string;
   updatedAt: string;
+  groupId?: string | null;
 }
 
 export function QuestionnairesList() {
@@ -21,8 +23,10 @@ export function QuestionnairesList() {
   const [error, setError] = useState<string | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [statsModalOpen, setStatsModalOpen] = useState(false);
+  const [shareWithGroupModalOpen, setShareWithGroupModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string>('');
   const [selectedName, setSelectedName] = useState<string>('');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [downloadDropdownOpen, setDownloadDropdownOpen] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,6 +90,13 @@ export function QuestionnairesList() {
     setSelectedId(id);
     setSelectedName(name);
     setStatsModalOpen(true);
+  };
+
+  const openShareWithGroupModal = (id: string, name: string, groupId: string | null | undefined) => {
+    setSelectedId(id);
+    setSelectedName(name);
+    setSelectedGroupId(groupId || null);
+    setShareWithGroupModalOpen(true);
   };
 
   if (loading) {
@@ -216,6 +227,19 @@ export function QuestionnairesList() {
                       </button>
 
                       <button
+                        onClick={() => openShareWithGroupModal(questionnaire.id, questionnaire.name, questionnaire.groupId)}
+                        className={`inline-flex items-center gap-1 px-3 py-2 rounded-lg transition-colors text-xs font-medium ${
+                          questionnaire.groupId
+                            ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                            : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                        }`}
+                        title={questionnaire.groupId ? "Shared with group" : "Share with group"}
+                      >
+                        <Users size={14} />
+                        {questionnaire.groupId && <span className="text-xs">✓</span>}
+                      </button>
+
+                      <button
                         onClick={() => openStatsModal(questionnaire.id, questionnaire.name)}
                         className="inline-flex items-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 transition-colors text-xs font-medium"
                         title="Statistics"
@@ -252,6 +276,15 @@ export function QuestionnairesList() {
         onClose={() => setStatsModalOpen(false)}
         questionnaireId={selectedId}
         questionnaireName={selectedName}
+      />
+
+      <ShareWithGroupModal
+        isOpen={shareWithGroupModalOpen}
+        onClose={() => setShareWithGroupModalOpen(false)}
+        questionnaireId={selectedId}
+        questionnaireName={selectedName}
+        currentGroupId={selectedGroupId}
+        onSuccess={loadQuestionnaires}
       />
     </div>
   );

@@ -13,7 +13,6 @@
     "strict": true,
     "strictPropertyInitialization": false,
     "resolveJsonModule": true,
-    "declaration": true,
     "declarationMap": true,
     "inlineSourceMap": true,
     "typeRoots": ["./node_modules/@types", "./types"],

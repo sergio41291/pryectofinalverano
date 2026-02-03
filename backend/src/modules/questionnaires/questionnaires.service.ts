@@ -71,6 +71,28 @@ export class QuestionnairesService {
     await this.questionnaireRepository.delete(id);
   }
 
+  async shareWithGroup(questionnaireId: string, groupId: string, userId: string) {
+    const questionnaire = await this.findById(questionnaireId);
+
+    if (questionnaire.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to share this questionnaire');
+    }
+
+    questionnaire.groupId = groupId;
+    return this.questionnaireRepository.save(questionnaire);
+  }
+
+  async unshareFromGroup(questionnaireId: string, userId: string) {
+    const questionnaire = await this.findById(questionnaireId);
+
+    if (questionnaire.userId !== userId) {
+      throw new ForbiddenException('You do not have permission to unshare this questionnaire');
+    }
+
+    questionnaire.groupId = null;
+    return this.questionnaireRepository.save(questionnaire);
+  }
+
   async submitResponse(
     questionnaireId: string,
     submitDto: SubmitQuestionnaireResponseDto,

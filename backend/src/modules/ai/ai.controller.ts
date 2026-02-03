@@ -413,4 +413,51 @@ export class AiController {
       throw error;
     }
   }
+
+  /**
+   * Share summary with group
+   * POST /api/processing/summaries/:id/share-with-group/:groupId
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Post('summaries/:id/share-with-group/:groupId')
+  async shareWithGroup(
+    @Param('id') summaryId: string,
+    @Param('groupId') groupId: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const summary = await this.aiService.shareWithGroup(summaryId, groupId, req.user.id);
+      return {
+        success: true,
+        data: summary,
+        message: 'Summary shared with group successfully',
+      };
+    } catch (error: any) {
+      this.logger.error(`Share summary error: ${error?.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Unshare summary from group
+   * DELETE /api/processing/summaries/:id/unshare-from-group
+   */
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('summaries/:id/unshare-from-group')
+  async unshareFromGroup(
+    @Param('id') summaryId: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const summary = await this.aiService.unshareFromGroup(summaryId, req.user.id);
+      return {
+        success: true,
+        data: summary,
+        message: 'Summary unshared from group successfully',
+      };
+    } catch (error: any) {
+      this.logger.error(`Unshare summary error: ${error?.message}`);
+      throw error;
+    }
+  }
 }

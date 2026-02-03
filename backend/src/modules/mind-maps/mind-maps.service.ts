@@ -221,6 +221,39 @@ Remember: Return ONLY the JSON structure, no explanations.`;
 
     await this.mindMapRepository.delete(id);
   }
+
+  /**
+   * Share mind map with group
+   */
+  async shareWithGroup(mindMapId: string, groupId: string, userId: string): Promise<MindMap> {
+    const mindMap = await this.mindMapRepository.findOne({
+      where: { id: mindMapId, userId },
+    });
+
+    if (!mindMap) {
+      throw new NotFoundException('Mind map not found');
+    }
+
+    mindMap.groupId = groupId;
+    return await this.mindMapRepository.save(mindMap);
+  }
+
+  /**
+   * Unshare mind map from group
+   */
+  async unshareFromGroup(mindMapId: string, userId: string): Promise<MindMap> {
+    const mindMap = await this.mindMapRepository.findOne({
+      where: { id: mindMapId, userId },
+    });
+
+    if (!mindMap) {
+      throw new NotFoundException('Mind map not found');
+    }
+
+    mindMap.groupId = null;
+    return await this.mindMapRepository.save(mindMap);
+  }
+
   async updateMindMapPositions(id: string, userId: string, nodes: any[]): Promise<MindMap> {
     const mindMap = await this.mindMapRepository.findOne({
       where: { id, user: { id: userId } },

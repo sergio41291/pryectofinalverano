@@ -142,6 +142,50 @@ export class MindMapsController {
   }
 
   /**
+   * Share mind map with group
+   * POST /api/mind-maps/:id/share-with-group/:groupId
+   */
+  @Post(':id/share-with-group/:groupId')
+  async shareWithGroup(
+    @Param('id') mindMapId: string,
+    @Param('groupId') groupId: string,
+    @Req() req: AuthRequest,
+  ) {
+    try {
+      const mindMap = await this.mindMapsService.shareWithGroup(mindMapId, groupId, req.user.id);
+      
+      return {
+        success: true,
+        data: mindMap,
+        message: 'Mind map shared with group successfully',
+      };
+    } catch (error: any) {
+      this.logger.error(`Share mind map error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Unshare mind map from group
+   * DELETE /api/mind-maps/:id/unshare-from-group
+   */
+  @Delete(':id/unshare-from-group')
+  async unshareFromGroup(@Param('id') mindMapId: string, @Req() req: AuthRequest) {
+    try {
+      const mindMap = await this.mindMapsService.unshareFromGroup(mindMapId, req.user.id);
+      
+      return {
+        success: true,
+        data: mindMap,
+        message: 'Mind map unshared from group successfully',
+      };
+    } catch (error: any) {
+      this.logger.error(`Unshare mind map error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Update node positions
    * PUT /api/mind-maps/:id/positions
    */

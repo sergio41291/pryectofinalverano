@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../modules/users/entities/user.entity';
+import { Group } from './group.entity';
 
 /**
  * Estructura de nodos para mapas mentales
@@ -79,6 +80,13 @@ export class MindMap {
 
   @Column('integer', { nullable: true })
   nodeCount?: number;
+
+  @Column('uuid', { nullable: true })
+  groupId: string | null;
+
+  @ManyToOne(() => Group, { nullable: true })
+  @JoinColumn({ name: 'groupId' })
+  group: Group;
 
   @CreateDateColumn()
   createdAt: Date;

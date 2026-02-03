@@ -9,6 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { User } from '../modules/users/entities/user.entity';
+import { Group } from './group.entity';
 
 export interface QuestionData {
   id: string;
@@ -47,6 +48,13 @@ export class Questionnaire {
   @ManyToOne(() => User, (user: User) => user.questionnaires)
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @Column('uuid', { nullable: true })
+  groupId: string | null;
+
+  @ManyToOne(() => Group, { nullable: true })
+  @JoinColumn({ name: 'groupId' })
+  group: Group;
 
   @OneToMany('QuestionnaireResponse', 'questionnaire')
   responses: any[];
