@@ -1,12 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { paymentService } from '../services/paymentService';
 import type { Payment } from '../services/paymentService';
 import { CheckCircle, XCircle, Loader } from 'lucide-react';
 
 export const PaymentSuccessPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [payment, setPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +13,9 @@ export const PaymentSuccessPage: React.FC = () => {
   }, []);
 
   const verifyPayment = async () => {
-    const sessionId = searchParams.get('session_id');
+    // Obtener session_id de la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session_id');
 
     if (!sessionId) {
       setError('ID de sesión no encontrado');
@@ -70,10 +69,10 @@ export const PaymentSuccessPage: React.FC = () => {
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Error en el Pago</h1>
           <p className="mt-2 text-gray-600">{error}</p>
           <button
-            onClick={() => navigate('/subscription')}
+            onClick={() => window.location.href = '/'}
             className="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
           >
-            Volver a Suscripciones
+            Volver al Inicio
           </button>
         </div>
       </div>
@@ -88,10 +87,10 @@ export const PaymentSuccessPage: React.FC = () => {
           <h1 className="mt-4 text-2xl font-bold text-gray-900">Pago No Encontrado</h1>
           <p className="mt-2 text-gray-600">No se encontró información del pago.</p>
           <button
-            onClick={() => navigate('/subscription')}
+            onClick={() => window.location.href = '/'}
             className="mt-6 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
           >
-            Volver a Suscripciones
+            Volver al Inicio
           </button>
         </div>
       </div>
@@ -156,16 +155,10 @@ export const PaymentSuccessPage: React.FC = () => {
 
         <div className="mt-8 space-y-3">
           <button
-            onClick={() => navigate('/home')}
+            onClick={() => window.location.href = '/'}
             className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
           >
             Ir al Panel Principal
-          </button>
-          <button
-            onClick={() => navigate('/subscription')}
-            className="w-full bg-white text-indigo-600 border-2 border-indigo-600 py-3 px-4 rounded-lg font-semibold hover:bg-indigo-50 transition-colors"
-          >
-            Ver Mi Suscripción
           </button>
         </div>
 

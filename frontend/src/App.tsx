@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { User, Mail, Lock, ArrowRight, BookOpen, Check, X } from 'lucide-react';
 import { Home } from './pages/Home';
 import { Share } from './pages/Share';
+import { PaymentSuccessPage } from './pages/PaymentSuccess';
 import { useAuth } from './context/AuthContext';
 
 // Componente router simple
@@ -11,6 +12,11 @@ function Router() {
 
   if (shareMatch) {
     return <Share />;
+  }
+
+  // Ruta para verificación de pago exitoso
+  if (pathname === '/subscription/success') {
+    return <PaymentSuccessPage />;
   }
 
   return <AppContent />;
