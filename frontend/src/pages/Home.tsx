@@ -59,7 +59,7 @@ export function Home() {
   const [viewingAudio, setViewingAudio] = useState<AudioResult | null>(null);
   
   // IA Lab States
-  const [showAudioSummary, setShowAudioSummary] = useState(false);
+  const [, setShowAudioSummary] = useState(false);
   const [showAudioQuestionnaire, setShowAudioQuestionnaire] = useState(false);
   const [selectedAudioId, setSelectedAudioId] = useState<string>('');
   const [selectedAudioTranscription, setSelectedAudioTranscription] = useState<string>('');
@@ -231,7 +231,7 @@ export function Home() {
                 onAIAction={(action, result) => {
                   if (action === 'summary') {
                     setSelectedAudioId(result.id);
-                    setSelectedAudioFileName(result.fileName || 'Audio');
+                    setSelectedAudioFileName('Audio');
                     setSelectedAudioTranscription(result.transcription || '');
                     setShowAudioSummary(true);
                   } else if (action === 'quiz') {
@@ -479,7 +479,7 @@ export function Home() {
             }
 
             // Guardar el resumen automáticamente después de generarlo
-            let savedSuccessfully = false;
+            // Guardar en backend
             try {
               const fileName = data.fileName || `resumen_${new Date().toISOString().slice(0, 10)}`;
               const result = await aiService.saveSummary({
@@ -531,15 +531,15 @@ export function Home() {
       />
 
       <AudioSummaryModal
+        isOpen={showAudioSummary}
+        audioResultId={selectedAudioId}
         audioFileName={selectedAudioFileName}
         audioTranscription={selectedAudioTranscription}
         onClose={() => {
           setShowAudioSummary(false);
           setSelectedAudioId('');
           setSelectedAudioFileName('');
-          setSelectedAudioTranscription
-          setShowAudioSummary(false);
-          setSelectedAudioId('');
+          setSelectedAudioTranscription('');
         }}
       />
       <AudioQuestionnaireModal

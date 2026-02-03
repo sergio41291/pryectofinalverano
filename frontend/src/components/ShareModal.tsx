@@ -22,7 +22,7 @@ interface ShareConfig {
 
 type ShareType = 'public' | 'password' | 'email' | 'private';
 
-export function ShareModal({ isOpen, onClose, questionnaireId, questionnaireName, onShareConfigured }: ShareModalProps) {
+export function ShareModal({ isOpen, onClose, questionnaireId, questionnaireName }: ShareModalProps) {
   const [shareType, setShareType] = useState<ShareType>('public');
   const [password, setPassword] = useState('');
   const [emails, setEmails] = useState('');

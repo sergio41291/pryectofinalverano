@@ -24,7 +24,7 @@ export function AudioSummaryModal({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [existingSummary, setExistingSummary] = useState<any | null>(null);
+  const [, setExistingSummary] = useState<any | null>(null);
   const [checkingExisting, setCheckingExisting] = useState(true);
 
   // Check if summary already exists when modal opens

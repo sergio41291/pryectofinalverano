@@ -353,7 +353,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           const summaries = summariesData.data || [];
           
           // Buscar un resumen que coincida con este archivo
-          const fileName = file.originalName || file.name || `file_${uploadId}`;
+          const fileName = file.originalFileName || `file_${uploadId}`;
           const fileNameWithoutExt = fileName.replace(/\.[^/.]+$/, '');
           const existingSummary = summaries.find((s: any) => 
             s.sourceFileName === fileName || 
@@ -403,7 +403,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           try {
             console.log('🔄 Migrating audio summary to summaries table...');
             const { aiService } = await import('../services/aiService');
-            const fileName = file.originalName || file.name || `audio_${uploadId}`;
+            const fileName = file.originalFileName || `audio_${uploadId}`;
             await aiService.saveSummary({
               title: fileName.replace(/\.[^/.]+$/, ''),
               sourceText: audioResult.transcription || 'Audio transcription',
@@ -568,7 +568,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           // Guardar datos del archivo existente
           setExistingFileData({
             uploadId,
-            fileName: file.originalName,
+            fileName: file.originalFileName,
             extractedText: extractedTextValue,
           });
           
@@ -588,7 +588,7 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
           onSummaryStart?.({
             uploadId,
             ocrText: '',
-            fileName: file.originalName,
+            fileName: file.originalFileName,
             isExistingFile: true,
           });
         }
