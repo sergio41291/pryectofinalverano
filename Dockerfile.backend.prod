@@ -3,8 +3,17 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install build dependencies
-RUN apk add --no-cache dumb-init python3 make g++
+# Configure DNS and install build dependencies
+# Use multiple retries and alternative repositories for better reliability
+RUN echo "nameserver 8.8.8.8" > /etc/resolv.conf && \
+    echo "nameserver 1.1.1.1" >> /etc/resolv.conf && \
+    apk update --no-cache && \
+    apk add --no-cache --update \
+        dumb-init \
+        python3 \
+        make \
+        g++ \
+        || (sleep 5 && apk add --no-cache dumb-init python3 make g++)
 
 # Copy package files
 COPY package*.json ./
