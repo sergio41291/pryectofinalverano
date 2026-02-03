@@ -480,7 +480,6 @@ export function Home() {
 
             // Guardar el resumen automáticamente después de generarlo
             // Guardar en backend
-            let savedSuccessfully = false;
             try {
               const fileName = data.fileName || `resumen_${new Date().toISOString().slice(0, 10)}`;
               const result = await aiService.saveSummary({
@@ -492,7 +491,6 @@ export function Home() {
                 sourceFileName: fileName,
               });
               console.log('Summary saved successfully:', result);
-              savedSuccessfully = true;
             } catch (saveErr: any) {
               console.error('Error saving summary:', saveErr);
               const errorMsg = saveErr.response?.data?.message || saveErr.message || 'Error al guardar el resumen';

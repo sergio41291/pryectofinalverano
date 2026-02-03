@@ -46,6 +46,14 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
     extractedText: string;
   } | null>(null);
 
+  // Para rastrear si estamos usando un archivo existente
+  const [isExistingFileMode, setIsExistingFileMode] = useState(false);
+  const [existingFileData, setExistingFileData] = useState<{
+    uploadId: string;
+    fileName: string;
+    extractedText: string;
+  } | null>(null);
+
   // Usar estado global de OCR si está disponible
   const ocrProgress = ocrState || {
     step: 'idle' as const,
