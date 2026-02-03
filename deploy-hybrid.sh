@@ -16,7 +16,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Project directories
-PROJECT_ROOT="/opt/learnmind-ai"
+PROJECT_ROOT="/home/sw1/pryectofinalverano"
 BACKEND_DIR="${PROJECT_ROOT}/backend"
 FRONTEND_DIR="${PROJECT_ROOT}/frontend"
 LOGS_DIR="${PROJECT_ROOT}/logs"

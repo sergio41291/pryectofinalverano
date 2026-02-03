@@ -69,8 +69,8 @@ Este script instala:
 ### 3. Clonar el Proyecto
 
 ```bash
-cd /opt/learnmind-ai
-git clone https://github.com/tu-usuario/learnmind-ai.git .
+cd /home/sw1/pryectofinalverano
+git clone https://github.com/sergio41291/pryectofinalverano.git .
 ```
 
 ### 4. Configurar Variables de Entorno
@@ -99,8 +99,8 @@ nano .env
 ### 5. Agregar Google Cloud Credentials
 
 ```bash
-mkdir -p /opt/learnmind-ai/backend/credentials
-nano /opt/learnmind-ai/backend/credentials/google-cloud-key.json
+mkdir -p /home/sw1/pryectofinalverano/backend/credentials
+nano /home/sw1/pryectofinalverano/backend/credentials/google-cloud-key.json
 ```
 
 Pegar el JSON completo de tu service account de Google Cloud.
@@ -108,7 +108,7 @@ Pegar el JSON completo de tu service account de Google Cloud.
 ### 6. Ejecutar Deployment
 
 ```bash
-cd /opt/learnmind-ai
+cd /home/sw1/pryectofinalverano
 chmod +x deploy-hybrid.sh
 ./deploy-hybrid.sh
 ```

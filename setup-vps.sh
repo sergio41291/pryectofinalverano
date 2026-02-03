@@ -87,9 +87,9 @@ echo -e "${GREEN}✓ Firewall configurado${NC}"
 
 # Step 8: Create project directory
 echo -e "\n${YELLOW}[8/8] Creando directorio del proyecto...${NC}"
-sudo mkdir -p /opt/learnmind-ai
-sudo chown -R $USER:$USER /opt/learnmind-ai
-echo -e "${GREEN}✓ Directorio creado: /opt/learnmind-ai${NC}"
+sudo mkdir -p /home/sw1/pryectofinalverano
+sudo chown -R $USER:$USER /home/sw1/pryectofinalverano
+echo -e "${GREEN}✓ Directorio creado: /home/sw1/pryectofinalverano${NC}"
 
 echo -e "\n${BLUE}=======================================================================${NC}"
 echo -e "${GREEN}VPS Setup completado exitosamente! ✓${NC}"
@@ -97,9 +97,9 @@ echo -e "${BLUE}================================================================
 
 echo -e "\n${YELLOW}IMPORTANTE:${NC}"
 echo -e "  1. ${RED}Cierra sesión y vuelve a conectar para aplicar cambios de Docker${NC}"
-echo -e "  2. Clona el proyecto en /opt/learnmind-ai:"
-echo -e "     ${BLUE}cd /opt/learnmind-ai${NC}"
-echo -e "     ${BLUE}git clone https://github.com/tu-usuario/learnmind-ai.git .${NC}"
+echo -e "  2. Clona el proyecto en /home/sw1/pryectofinalverano:"
+echo -e "     ${BLUE}cd /home/sw1/pryectofinalverano${NC}"
+echo -e "     ${BLUE}git clone https://github.com/sergio41291/pryectofinalverano.git .${NC}"
 echo -e "  3. Configura .env:"
 echo -e "     ${BLUE}cp .env.production .env${NC}"
 echo -e "     ${BLUE}nano .env${NC}"
