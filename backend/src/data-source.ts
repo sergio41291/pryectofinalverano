@@ -14,6 +14,8 @@ import { Group } from './entities/group.entity';
 import { GroupMember } from './entities/group-member.entity';
 import { Translation } from './entities/translation.entity';
 import { Payment } from './entities/payment.entity';
+import { Category } from './entities/category.entity';
+import { DocumentShare } from './entities/document-share.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -37,6 +39,8 @@ export const AppDataSource = new DataSource({
     GroupMember,
     Translation,
     Payment,
+    Category,
+    DocumentShare,
   ],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,

@@ -77,8 +77,8 @@ export const SubscriptionPlans: React.FC<Props> = ({ currentTier = 'free' }) => 
       // Crear sesión de checkout
       const frontendUrl = window.location.origin;
       const { url } = await paymentService.createCheckoutSession(
-        tier,
-        `${frontendUrl}/subscription/success`,
+        tier as any, // El backend espera lowercase
+        `${frontendUrl}/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         `${frontendUrl}/subscription`
       );
 

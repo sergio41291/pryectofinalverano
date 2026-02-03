@@ -280,18 +280,59 @@ export class PaymentsService {
    */
   async verifyPayment(sessionId: string): Promise<PaymentResponseDto> {
     try {
-      const session = await this.stripe.checkout.sessions.retrieve(sessionId);
+      const session = await this.stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['payment_intent'],
+      });
 
       if (session.payment_status !== 'paid') {
         throw new BadRequestException('Payment not completed');
       }
 
-      const payment = await this.paymentRepository.findOne({
+      // Buscar pago existente
+      let payment = await this.paymentRepository.findOne({
         where: { stripeSessionId: sessionId },
       });
 
+      // Si no existe, crearlo ahora (el webhook puede fallar en desarrollo local)
       if (!payment) {
-        throw new NotFoundException('Payment not found');
+        const userId = session.metadata?.userId;
+        const tier = session.metadata?.tier as 'pro' | 'business';
+
+        if (!userId || !tier) {
+          throw new BadRequestException('Invalid session metadata');
+        }
+
+        // Obtener usuario
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+        if (!user) {
+          throw new NotFoundException('User not found');
+        }
+
+        // Crear registro de pago
+        const paymentIntentId = typeof session.payment_intent === 'string' 
+          ? session.payment_intent 
+          : session.payment_intent?.id || '';
+        
+        payment = this.paymentRepository.create({
+          userId,
+          stripePaymentId: paymentIntentId,
+          stripeSessionId: sessionId,
+          amount: (session.amount_total || 0) / 100, // Convertir de centavos a dólares
+          currency: (session.currency || 'usd').toUpperCase(),
+          status: PaymentStatus.COMPLETED,
+          subscriptionTier: tier as any,
+          stripeCustomerId: session.customer as string,
+          metadata: session.metadata || {},
+        });
+
+        await this.paymentRepository.save(payment);
+
+        // Actualizar tier del usuario
+        await this.userRepository.update(userId, {
+          subscriptionTier: tier,
+        });
+
+        this.logger.log(`Payment record created from verification for session ${sessionId}`);
       }
 
       return this.mapToResponseDto(payment);

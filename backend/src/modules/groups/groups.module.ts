@@ -9,9 +9,13 @@ import { Summary } from '../../entities/summary.entity';
 import { Upload } from '../uploads/entities/upload.entity';
 import { GroupsService } from './groups.service';
 import { GroupsController } from './groups.controller';
+import { EmailModule } from '../email/email.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Group, GroupMember, User, Questionnaire, MindMap, Summary, Upload])],
+  imports: [
+    TypeOrmModule.forFeature([Group, GroupMember, User, Questionnaire, MindMap, Summary, Upload]),
+    EmailModule,
+  ],
   controllers: [GroupsController],
   providers: [GroupsService],
   exports: [GroupsService],

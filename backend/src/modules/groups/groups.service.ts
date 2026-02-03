@@ -16,6 +16,7 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class GroupsService {
@@ -32,6 +33,7 @@ export class GroupsService {
     private mindMapRepository: Repository<MindMap>,
     @InjectRepository(Summary)
     private summaryRepository: Repository<Summary>,
+    private emailService: EmailService,
   ) {}
 
   /**
@@ -259,7 +261,32 @@ export class GroupsService {
       role: addMemberDto.role,
     });
 
-    return await this.groupMemberRepository.save(member);
+    const savedMember = await this.groupMemberRepository.save(member);
+
+    // Enviar email de invitación
+    const group = await this.groupRepository.findOne({ 
+      where: { id: groupId },
+      relations: ['owner']
+    });
+    
+    const inviter = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (group && inviter) {
+      // Enviar email de forma asíncrona sin bloquear la respuesta
+      this.emailService.sendGroupInvitation({
+        recipientEmail: newUser.email,
+        recipientName: `${newUser.firstName} ${newUser.lastName}`,
+        groupName: group.name,
+        inviterName: `${inviter.firstName} ${inviter.lastName}`,
+        role: addMemberDto.role,
+        groupId: group.id,
+      }).catch(error => {
+        // Log error pero no fallar la operación
+        console.error('Error al enviar email de invitación:', error);
+      });
+    }
+
+    return savedMember;
   }
 
   /**

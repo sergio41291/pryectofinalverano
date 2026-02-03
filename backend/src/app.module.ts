@@ -16,6 +16,8 @@ import { GroupsModule } from './modules/groups/groups.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { TextToSpeechModule } from './modules/text-to-speech/text-to-speech.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { CategoriesModule } from './modules/categories/categories.module';
+import { EmailModule } from './modules/email/email.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -32,6 +34,8 @@ import { Group } from './entities/group.entity';
 import { GroupMember } from './entities/group-member.entity';
 import { Translation } from './entities/translation.entity';
 import { Payment } from './entities/payment.entity';
+import { Category } from './entities/category.entity';
+import { DocumentShare } from './entities/document-share.entity';
 
 @Module({
   imports: [
@@ -58,7 +62,7 @@ import { Payment } from './entities/payment.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap, Group, GroupMember, Translation, Payment],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap, Group, GroupMember, Translation, Payment, Category, DocumentShare],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -77,6 +81,8 @@ import { Payment } from './entities/payment.entity';
     TranslationsModule,
     TextToSpeechModule,
     PaymentsModule,
+    CategoriesModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -137,6 +137,15 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # SMTP Configuration
+      SMTP_HOST: ${SMTP_HOST:-mail.jkhoster.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:-noreply@jkhoster.com}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@jkhoster.com}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-LearnMind AI}
+      SMTP_ENABLED: ${SMTP_ENABLED:-true}
     ports:
       - "${BACKEND_PORT:-3000}:${BACKEND_PORT:-3000}"
     depends_on:

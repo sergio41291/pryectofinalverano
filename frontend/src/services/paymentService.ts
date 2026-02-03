@@ -34,7 +34,7 @@ export interface Subscription {
 
 class PaymentService {
   private getToken(): string | null {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken');
   }
 
   private getAuthHeaders() {
@@ -53,7 +53,7 @@ class PaymentService {
       const response = await axios.post<CheckoutSessionResponse>(
         `${API_URL}/payments/create-checkout`,
         {
-          tier,
+          tier: tier.toLowerCase(), // Backend expects lowercase
           successUrl,
           cancelUrl,
         },

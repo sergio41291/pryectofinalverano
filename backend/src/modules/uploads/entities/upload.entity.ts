@@ -11,16 +11,21 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { OcrResult } from '../../ocr/entities/ocr-result.entity';
+import { Category } from '../../../entities/category.entity';
 
 @Entity('uploads')
 @Index(['userId', 'createdAt'])
 @Index(['fileName'])
+@Index(['categoryId'])
 export class Upload {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'uuid' })
   userId: string;
+
+  @Column({ type: 'uuid', nullable: true })
+  categoryId: string | null;
 
   @Column({ type: 'varchar', length: 255 })
   fileName: string;
@@ -74,6 +79,10 @@ export class Upload {
   @ManyToOne(() => User, (user) => user.uploads, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
   user: User;
+
+  @ManyToOne(() => Category, (category) => category.uploads, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'categoryId' })
+  category: Category;
 
   @OneToMany(() => OcrResult, (ocrResult) => ocrResult.upload, { onDelete: 'CASCADE' })
   ocrResults: OcrResult[];

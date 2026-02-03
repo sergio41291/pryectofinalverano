@@ -14,6 +14,7 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   Logger,
+  Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiParam } from '@nestjs/swagger';
@@ -23,6 +24,9 @@ import { OcrService } from '../ocr/ocr.service';
 import { AudioService } from '../audio/audio.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { SubscriptionLimitGuard, SubscriptionLimit, LimitType } from '../../common/guards/subscription-limit.guard';
+import { SearchUploadsDto } from './dto/search-uploads.dto';
+import { ShareDocumentDto } from './dto/share-document.dto';
+import { GetUser } from '../../common/decorators/get-user.decorator';
 
 @ApiTags('uploads')
 @ApiBearerAuth()
@@ -148,6 +152,11 @@ export class UploadsController {
     return ocrMimeTypes.includes(mimeType.toLowerCase());
   }
 
+  @Get('search')
+  async search(@GetUser('id') userId: string, @Query() dto: SearchUploadsDto) {
+    return this.uploadsService.search(userId, dto);
+  }
+
   @Get()
   async getUserUploads(
     @Request() req: any,
@@ -212,5 +221,42 @@ export class UploadsController {
   async deleteUpload(@Param('id') id: string, @Request() req: any) {
     await this.uploadsService.delete(req.user.id, id);
     return { message: 'Upload deleted successfully' };
+  }
+
+  @Post(':id/share')
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  async shareDocument(
+    @Param('id') id: string,
+    @GetUser('id') userId: string,
+    @Body() dto: ShareDocumentDto,
+  ) {
+    return this.uploadsService.shareDocument(id, userId, dto);
+  }
+
+  @Get(':id/shares')
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  async getDocumentShares(@Param('id') id: string, @GetUser('id') userId: string) {
+    return this.uploadsService.getDocumentShares(id, userId);
+  }
+
+  @Delete(':id/shares/:shareId')
+  @ApiParam({ name: 'id', description: 'Upload ID' })
+  @ApiParam({ name: 'shareId', description: 'Share ID' })
+  async unshareDocument(
+    @Param('id') id: string,
+    @Param('shareId') shareId: string,
+    @GetUser('id') userId: string,
+  ) {
+    await this.uploadsService.unshareDocument(id, userId, shareId);
+    return { message: 'Document unshared successfully' };
+  }
+
+  @Get('shared-with-me')
+  async getSharedWithMe(
+    @GetUser('id') userId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit: number = 20,
+  ) {
+    return this.uploadsService.getSharedWithMe(userId, page, limit);
   }
 }
