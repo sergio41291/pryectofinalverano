@@ -92,8 +92,8 @@ cd "${BACKEND_DIR}"
 
 # Install dependencies (solo si no existen)
 if [ ! -d "node_modules" ]; then
-    echo "Instalando dependencias del backend..."
-    npm install --omit=dev --legacy-peer-deps
+    echo "Instalando dependencias del backend (incluyendo devDependencies para build)..."
+    npm install --legacy-peer-deps
 else
     echo "Dependencias del backend ya instaladas"
 fi
@@ -115,8 +115,8 @@ cd "${FRONTEND_DIR}"
 
 # Install dependencies (solo si no existen)
 if [ ! -d "node_modules" ]; then
-    echo "Instalando dependencias del frontend..."
-    npm install --omit=dev --legacy-peer-deps
+    echo "Instalando dependencias del frontend (incluyendo devDependencies para build)..."
+    npm install --legacy-peer-deps
 else
     echo "Dependencias del frontend ya instaladas"
 fi
