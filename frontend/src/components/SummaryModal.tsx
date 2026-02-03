@@ -47,8 +47,8 @@ export function SummaryModal({ isOpen, onClose, onSummaryStart, ocrState, ocrRes
   } | null>(null);
 
   // Para rastrear si estamos usando un archivo existente
-  const [isExistingFileMode, setIsExistingFileMode] = useState(false);
-  const [existingFileData, setExistingFileData] = useState<{
+  const [, setIsExistingFileMode] = useState(false);
+  const [, setExistingFileData] = useState<{
     uploadId: string;
     fileName: string;
     extractedText: string;
