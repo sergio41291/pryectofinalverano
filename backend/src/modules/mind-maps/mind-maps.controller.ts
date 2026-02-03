@@ -16,6 +16,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { Response } from 'express';
 import { MindMapsService } from './mind-maps.service';
 import { GenerateMindMapDto } from './dto/mind-map.dto';
+import { SubscriptionLimitGuard, SubscriptionLimit, LimitType } from '../../common/guards/subscription-limit.guard';
 
 interface AuthRequest extends Request {
   user: {
@@ -36,6 +37,8 @@ export class MindMapsController {
    * POST /api/mind-maps/generate
    */
   @Post('generate')
+  @UseGuards(SubscriptionLimitGuard)
+  @SubscriptionLimit(LimitType.MIND_MAP_CREATION)
   async generateMindMap(@Body() dto: GenerateMindMapDto, @Req() req: AuthRequest) {
     try {
       this.logger.log(`User ${req.user.id} generating mind map from ${dto.text.length} chars`);

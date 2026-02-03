@@ -34,6 +34,13 @@ export class User {
   @Column({ type: 'varchar', length: 20, default: 'free' })
   plan: 'free' | 'pro' | 'enterprise';
 
+  // Stripe fields
+  @Column({ type: 'varchar', nullable: true })
+  stripeCustomerId?: string;
+
+  @Column({ type: 'varchar', length: 20, default: 'free' })
+  subscriptionTier: 'free' | 'pro' | 'business';
+
   @Column({ type: 'boolean', default: false })
   emailVerified: boolean;
 

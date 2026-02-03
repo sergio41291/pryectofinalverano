@@ -6,11 +6,12 @@ import { User } from '../users/entities/user.entity';
 import { Questionnaire } from '../../entities/questionnaire.entity';
 import { MindMap } from '../../entities/mind-map.entity';
 import { Summary } from '../../entities/summary.entity';
+import { Upload } from '../uploads/entities/upload.entity';
 import { GroupsService } from './groups.service';
 import { GroupsController } from './groups.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Group, GroupMember, User, Questionnaire, MindMap, Summary])],
+  imports: [TypeOrmModule.forFeature([Group, GroupMember, User, Questionnaire, MindMap, Summary, Upload])],
   controllers: [GroupsController],
   providers: [GroupsService],
   exports: [GroupsService],

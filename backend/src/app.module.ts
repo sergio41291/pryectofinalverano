@@ -15,6 +15,7 @@ import { MindMapsModule } from './modules/mind-maps/mind-maps.module';
 import { GroupsModule } from './modules/groups/groups.module';
 import { TranslationsModule } from './modules/translations/translations.module';
 import { TextToSpeechModule } from './modules/text-to-speech/text-to-speech.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { User } from './modules/users/entities/user.entity';
@@ -29,6 +30,8 @@ import { Summary } from './entities/summary.entity';
 import { MindMap } from './entities/mind-map.entity';
 import { Group } from './entities/group.entity';
 import { GroupMember } from './entities/group-member.entity';
+import { Translation } from './entities/translation.entity';
+import { Payment } from './entities/payment.entity';
 
 @Module({
   imports: [
@@ -55,7 +58,7 @@ import { GroupMember } from './entities/group-member.entity';
         username: configService.get('DB_USER', 'postgres'),
         password: configService.get('DB_PASSWORD', 'postgres'),
         database: configService.get('DB_NAME', 'learpmind'),
-        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap, Group, GroupMember],
+        entities: [User, Subscription, Upload, OcrResult, AudioResult, Questionnaire, QuestionnaireResponse, QuestionnaireShare, Summary, MindMap, Group, GroupMember, Translation, Payment],
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
       }),
@@ -73,6 +76,7 @@ import { GroupMember } from './entities/group-member.entity';
     GroupsModule,
     TranslationsModule,
     TextToSpeechModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

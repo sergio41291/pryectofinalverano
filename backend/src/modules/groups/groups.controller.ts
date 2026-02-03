@@ -17,6 +17,7 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { SubscriptionLimitGuard, SubscriptionLimit, LimitType } from '../../common/guards/subscription-limit.guard';
 
 @Controller('groups')
 @UseGuards(AuthGuard('jwt'))
@@ -27,6 +28,8 @@ export class GroupsController {
    * POST /api/groups - Create a new group
    */
   @Post()
+  @UseGuards(SubscriptionLimitGuard)
+  @SubscriptionLimit(LimitType.GROUP_CREATION)
   async createGroup(@NestRequest() req: Request & { user: any }, @Body() createGroupDto: CreateGroupDto) {
     return await this.groupsService.createGroup(req.user.id, createGroupDto);
   }

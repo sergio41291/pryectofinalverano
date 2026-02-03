@@ -3,12 +3,15 @@ import { ValidationPipe, ClassSerializerInterceptor, Logger } from '@nestjs/comm
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import compression from 'compression';
 import helmet from 'helmet';
+import * as express from 'express';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RateLimitMiddleware } from './common/middleware/rate-limit.middleware';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true, // Enable raw body for Stripe webhooks
+  });
   const logger = new Logger('Bootstrap');
 
   // Global exception filter

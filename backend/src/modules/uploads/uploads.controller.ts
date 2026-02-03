@@ -22,6 +22,7 @@ import { UploadsService } from './uploads.service';
 import { OcrService } from '../ocr/ocr.service';
 import { AudioService } from '../audio/audio.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { SubscriptionLimitGuard, SubscriptionLimit, LimitType } from '../../common/guards/subscription-limit.guard';
 
 @ApiTags('uploads')
 @ApiBearerAuth()
@@ -37,6 +38,8 @@ export class UploadsController {
   ) {}
 
   @Post()
+  @UseGuards(SubscriptionLimitGuard)
+  @SubscriptionLimit(LimitType.DOCUMENT_UPLOAD)
   @UseInterceptors(FileInterceptor('file'))
   @ApiConsumes('multipart/form-data')
   async uploadFile(

@@ -13,6 +13,7 @@ import { MindMap } from './entities/mind-map.entity';
 import { Group } from './entities/group.entity';
 import { GroupMember } from './entities/group-member.entity';
 import { Translation } from './entities/translation.entity';
+import { Payment } from './entities/payment.entity';
 
 export const AppDataSource = new DataSource({
   type: 'postgres',
@@ -35,6 +36,7 @@ export const AppDataSource = new DataSource({
     Group,
     GroupMember,
     Translation,
+    Payment,
   ],
   migrations: ['src/migrations/*.ts'],
   synchronize: false,
