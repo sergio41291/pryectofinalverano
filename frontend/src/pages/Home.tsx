@@ -16,6 +16,7 @@ import { Summaries } from './Summaries';
 import { MindMaps } from './MindMaps';
 import { Translations } from './Translations';
 import { Groups } from './Groups';
+import { SubscriptionPage } from './Subscription';
 import { aiService } from '../services/aiService';
 import { type AudioResult } from '../services/audioService';
 import { useOcrProgress } from '../hooks/useOcrProgress';
@@ -360,6 +361,9 @@ export function Home() {
 
       case 'grupos':
         return <Groups />;
+
+      case 'subscription':
+        return <SubscriptionPage />;
 
       case 'cuestionarios':
         return (
