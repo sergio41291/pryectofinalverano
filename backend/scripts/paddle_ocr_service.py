@@ -154,50 +154,8 @@ class PaddleOCRService:
             print(f"[OK] Resultado guardado en: {output_path}")
             with open(output_path, 'w', encoding='utf-8') as f:
                 json.dump(final_result, f, ensure_ascii=False, indent=2)
-
-                for page_num, image_path in enumerate(temp_images, 1):
-                    print(f"[MAIN] Procesando página {page_num}/{len(temp_images)}")
-                    result = self.extract_text(image_path)
-                    all_results.append(result)
-            else:
-                print(f"[MAIN] Detectado archivo de imagen")
-                result = self.extract_text(input_path)
-                all_results.append(result)
             
-            # Combinar resultados
-            combined_text = ""
-            combined_lines = []
-            all_confidences = []
-            
-            for result in all_results:
-                if result.get("success"):
-                    combined_text += result.get("full_text", "") + "\n"
-                    combined_lines.extend(result.get("lines", []))
-                    stats = result.get("statistics", {})
-                    if stats.get("average_confidence"):
-                        all_confidences.append(stats.get("average_confidence"))
-            
-            final_result = {
-                "success": any(r.get("success") for r in all_results),
-                "full_text": combined_text.strip(),
-                "text": combined_text.strip(),
-                "lines": combined_lines,
-                "statistics": {
-                    "total_lines": len(combined_lines),
-                    "average_confidence": (
-                        sum(all_confidences) / len(all_confidences)
-                        if all_confidences else 0
-                    ),
-                    "pages_processed": len(all_results)
-                }
-            }
-            
-            # Guardar resultado como JSON
-            with open(output_path, 'w', encoding='utf-8') as f:
-                json.dump(final_result, f, ensure_ascii=False, indent=2)
-            
-            print(f"\n[OK] Resultado guardado en: {output_path}")
-            print(f"[SUCCESS] Procesamiento completado!\n")
+            print(f"\n[SUCCESS] Procesamiento completado!\n")
             
         finally:
             # Limpiar imágenes temporales
