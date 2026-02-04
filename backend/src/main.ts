@@ -22,12 +22,20 @@ async function bootstrap() {
   app.use(compression());
 
   // CORS
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(',').map(o => o.trim()) || ['http://localhost:5173', 'http://localhost:3000'];
   app.enableCors({
     origin: (origin, callback) => {
-      // Permitir localhost en cualquier puerto en desarrollo
-      if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // Check if origin is in allowed list
+      if (allowedOrigins.some(allowed => origin.includes(allowed) || allowed.includes(origin))) {
         callback(null, true);
       } else {
+        logger.warn(`CORS blocked origin: ${origin}. Allowed: ${allowedOrigins.join(', ')}`);
         callback(new Error('Not allowed by CORS'));
       }
     },
