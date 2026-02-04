@@ -109,6 +109,14 @@ echo -e "\n${YELLOW}[7/9] Configurando frontend...${NC}"
 
 cd "${FRONTEND_DIR}"
 
+# Copy production environment config
+if [ -f ".env.production" ]; then
+    echo "Configurando variables de entorno de producción..."
+    cp .env.production .env
+else
+    echo -e "${YELLOW}Advertencia: .env.production no encontrado, usando .env existente${NC}"
+fi
+
 # Always install dependencies in deployment (includes devDependencies for build)
 echo "Instalando dependencias del frontend..."
 npm install --legacy-peer-deps
@@ -117,7 +125,17 @@ npm install --legacy-peer-deps
 echo "Compilando frontend..."
 npm run build
 
-echo -e "${GREEN}✓ Frontend configurado${NC}"
+# Verify build output
+if [ ! -d "dist" ] || [ -z "$(ls -A dist)" ]; then
+    echo -e "${RED}Error: Frontend build falló o directorio dist está vacío${NC}"
+    exit 1
+fi
+
+# Reload nginx to serve new files
+echo "Recargando nginx para servir archivos actualizados..."
+docker exec learnmind-nginx nginx -s reload || echo -e "${YELLOW}No se pudo recargar nginx, continúa...${NC}"
+
+echo -e "${GREEN}✓ Frontend configurado y compilado${NC}"
 
 # Step 8: Setup OCR service (Python)
 echo -e "\n${YELLOW}[8/9] Configurando servicio OCR...${NC}"
@@ -143,14 +161,16 @@ echo -e "\n${YELLOW}[9/9] Iniciando aplicaciones con PM2...${NC}"
 
 cd "${PROJECT_ROOT}"
 
-# Start all applications
-pm2 start ecosystem.config.js
+# Start backend and OCR service
+# Note: Frontend is served directly by nginx from frontend/dist
+pm2 start ecosystem.config.js --only learnmind-backend,learnmind-ocr
 
 # Save PM2 configuration
 pm2 save
 
-# Setup PM2 startup script
-pm2 startup
+# Show startup command (user needs to run it manually with sudo)
+echo -e "\n${YELLOW}Para configurar auto-inicio en boot del sistema, ejecuta:${NC}"
+pm2 startup | grep "sudo" || echo -e "${BLUE}pm2 startup${NC} (y ejecuta el comando que genera)"
 
 echo -e "${GREEN}✓ Aplicaciones iniciadas con PM2${NC}"
 
@@ -169,16 +189,19 @@ echo -e "\n${BLUE}==============================================================
 echo -e "${GREEN}URLs de acceso:${NC}"
 echo -e "  Frontend:  ${BLUE}https://learnmind-ai.jkhoster.com${NC}"
 echo -e "  API:       ${BLUE}https://learnmind-ai.jkhoster.com/api${NC}"
-echo -e "  API Docs:  ${BLUE}https://learnmind-ai.jkhoster.com/api/docs${NC}"
 echo -e "  Health:    ${BLUE}https://learnmind-ai.jkhoster.com/api/health${NC}"
 
 echo -e "\n${GREEN}Comandos útiles:${NC}"
 echo -e "  Ver logs PM2:              ${BLUE}pm2 logs${NC}"
 echo -e "  Ver logs Docker:           ${BLUE}docker-compose -f docker-compose.infrastructure.yml logs -f${NC}"
 echo -e "  Reiniciar backend:         ${BLUE}pm2 restart learnmind-backend${NC}"
-echo -e "  Reiniciar frontend:        ${BLUE}pm2 restart learnmind-frontend${NC}"
-echo -e "  Ver estado:                ${BLUE}pm2 status${NC}"
-echo -e "  Ver monitoreo:             ${BLUE}pm2 monit${NC}"
+echo -e "  Recargar nginx:            ${BLUE}docker exec learnmind-nginx nginx -s reload${NC}"
+echo -e "  Ver estado PM2:            ${BLUE}pm2 status${NC}"
+echo -e "  Ver estado Docker:         ${BLUE}docker ps${NC}"
+echo -e "  Ver base de datos:         ${BLUE}docker exec -it learnmind-postgres psql -U learnmind_user -d learnmind_production${NC}"
+
+echo -e "\n${YELLOW}Nota: El frontend es servido directamente por Nginx desde frontend/dist${NC}"
+echo -e "${YELLOW}Para actualizar frontend: reconstruir y recargar nginx${NC}"
 
 echo -e "\n${BLUE}=======================================================================${NC}"
 echo -e "${GREEN}Deployment completado exitosamente! 🚀${NC}"
