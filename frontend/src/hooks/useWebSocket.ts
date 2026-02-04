@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { getWebSocketUrl } from '../config/api';
 
 interface OcrNotification {
   uploadId: string;
@@ -18,7 +19,7 @@ export function useWebSocket() {
   const [notifications, setNotifications] = useState<OcrNotification[]>([]);
 
   useEffect(() => {
-    const socketUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+    const socketUrl = getWebSocketUrl();
     const token = localStorage.getItem('authToken');
 
     if (!token) {

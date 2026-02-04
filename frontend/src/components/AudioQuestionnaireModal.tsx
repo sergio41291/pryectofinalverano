@@ -45,7 +45,7 @@ export function AudioQuestionnaireModal({
 
     try {
       const response = await fetch(
-        `http://localhost:3001/api/processing/audio/${audioResultId}/questionnaire`,
+        `${getApiUrl()}/processing/audio/${audioResultId}/questionnaire`,
         {
           method: 'POST',
           headers: {

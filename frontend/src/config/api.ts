@@ -30,18 +30,18 @@ export const getApiUrl = (): string => {
   const isProduction = import.meta.env.PROD;
   
   if (isProduction) {
-    return `${window.location.protocol}//${window.location.host}`;
+    return `${window.location.protocol}//${window.location.host}/api`;
   }
   
-  const envUrl = import.meta.env.VITE_BACKEND_URL;
-  return envUrl || 'http://localhost:3001';
+  const envUrl = import.meta.env.VITE_API_URL;
+  return envUrl || 'http://localhost:3001/api';
 };
 
 // Configuración consolidada
 export const API_CONFIG = {
   websocketUrl: getWebSocketUrl(),
   apiUrl: getApiUrl(),
-  apiPrefix: '/api/v1',
+  apiPrefix: '/api',
 };
 
 export default API_CONFIG;

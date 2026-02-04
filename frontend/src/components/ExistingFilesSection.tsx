@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Music, FileText, Loader, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getApiUrl } from '../config/api';
 
 export interface ExistingFile {
   id: string;
@@ -67,7 +68,7 @@ export function ExistingFilesSection({ onSelectFile, isLoading = false }: Existi
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('http://localhost:3001/api/uploads', {
+      const response = await fetch(`${getApiUrl()}/uploads`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },

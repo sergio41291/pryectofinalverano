@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { X, Upload, Loader, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { ExistingFilesSection, type ExistingFile } from './ExistingFilesSection';
+import { getApiUrl } from '../config/api';
 
 interface QuestionnaireGeneratorModalProps {
   isOpen: boolean;
@@ -75,7 +76,7 @@ export function QuestionnaireGeneratorModal({
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadResponse = await fetch('http://localhost:3001/api/uploads', {
+      const uploadResponse = await fetch(`${getApiUrl()}/uploads`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -95,7 +96,7 @@ export function QuestionnaireGeneratorModal({
 
       if (file.type === 'application/pdf' || file.type.includes('image')) {
         const ocrResponse = await fetch(
-          `http://localhost:3001/api/ocr/${uploadId}/process`,
+          `${getApiUrl()}/ocr/${uploadId}/process`,
           {
             method: 'POST',
             headers: {
@@ -127,7 +128,7 @@ export function QuestionnaireGeneratorModal({
             console.log(`OCR check attempt ${retries + 1}/${maxRetries}, checking endpoint: /api/ocr/${uploadIdForCheck}`);
             
             const resultResponse = await fetch(
-              `http://localhost:3001/api/ocr/${uploadIdForCheck}`,
+              `${getApiUrl()}/ocr/${uploadIdForCheck}`,
               {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
               }
@@ -176,7 +177,7 @@ export function QuestionnaireGeneratorModal({
         }
       } else if (file.type.includes('audio')) {
         const audioResponse = await fetch(
-          `http://localhost:3001/api/audio/${uploadId}/process`,
+          `${getApiUrl()}/audio/${uploadId}/process`,
           {
             method: 'POST',
             headers: {
@@ -208,7 +209,7 @@ export function QuestionnaireGeneratorModal({
             console.log(`Audio check attempt ${retries + 1}/${maxRetries}, checking endpoint: /api/audio/${uploadIdForCheck}`);
             
             const resultResponse = await fetch(
-              `http://localhost:3001/api/audio/${uploadIdForCheck}`,
+              `${getApiUrl()}/audio/${uploadIdForCheck}`,
               {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
               }
@@ -274,7 +275,7 @@ export function QuestionnaireGeneratorModal({
         throw new Error('No valid text to generate questionnaire from');
       }
 
-      const response = await fetch('http://localhost:3001/api/processing/questionnaire', {
+      const response = await fetch(`${getApiUrl()}/processing/questionnaire`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -361,7 +362,7 @@ export function QuestionnaireGeneratorModal({
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch('http://localhost:3001/api/questionnaires', {
+      const response = await fetch(`${getApiUrl()}/questionnaires`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -738,8 +739,8 @@ export function QuestionnaireGeneratorModal({
                   if (isAudio) {
                     // Para audios, obtener el resultado directamente desde /api/audio/{uploadId}
                     const token = localStorage.getItem('authToken');
-                    console.log('Fetching audio from:', `http://localhost:3001/api/audio/${file.id}`);
-                    const response = await fetch(`http://localhost:3001/api/audio/${file.id}`, {
+                    console.log('Fetching audio from:', `${getApiUrl()}/audio/${file.id}`);
+                    const response = await fetch(`${getApiUrl()}/audio/${file.id}`, {
                       headers: {
                         'Authorization': `Bearer ${token}`,
                       }
@@ -757,8 +758,8 @@ export function QuestionnaireGeneratorModal({
                   } else {
                     // Para PDFs e imágenes, obtener el resultado de OCR
                     const token = localStorage.getItem('authToken');
-                    console.log('Fetching OCR from:', `http://localhost:3001/api/ocr/${file.id}`);
-                    const response = await fetch(`http://localhost:3001/api/ocr/${file.id}`, {
+                    console.log('Fetching OCR from:', `${getApiUrl()}/ocr/${file.id}`);
+                    const response = await fetch(`${getApiUrl()}/ocr/${file.id}`, {
                       headers: {
                         'Authorization': `Bearer ${token}`,
                       }

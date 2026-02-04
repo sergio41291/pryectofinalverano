@@ -45,7 +45,7 @@ export function AudioSummaryModal({
     try {
       setCheckingExisting(true);
       // Try to find existing summary by searching in summaries table
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/processing/summaries?page=1&limit=100`, {
+      const response = await fetch(`${getApiUrl()}/processing/summaries?page=1&limit=100`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
@@ -84,7 +84,7 @@ export function AudioSummaryModal({
     try {
       // Usar el endpoint de audio específico
       const response = await fetch(
-        `http://localhost:3001/api/processing/audio/${audioResultId}/summary`,
+        `${getApiUrl()}/processing/audio/${audioResultId}/summary`,
         {
           method: 'POST',
           headers: {
