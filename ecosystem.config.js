@@ -22,8 +22,8 @@ module.exports = {
     },
     {
       name: 'learnmind-frontend',
-      script: 'serve',
-      args: 'dist -s -l 5173',
+      script: 'npx',
+      args: ['serve', 'dist', '-s', '-p', '5173'],
       cwd: '/home/sw1/pryectofinalverano/frontend',
       instances: 1,
       autorestart: true,
