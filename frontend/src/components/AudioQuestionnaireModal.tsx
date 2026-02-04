@@ -46,7 +46,7 @@ export function AudioQuestionnaireModal({
 
     try {
       const response = await fetch(
-        `${getApiUrl()}/processing/audio/${audioResultId}/questionnaire`,
+        `${getApiUrl()}/api/processing/audio/${audioResultId}/questionnaire`,
         {
           method: 'POST',
           headers: {

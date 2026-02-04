@@ -76,7 +76,7 @@ export function QuestionnaireGeneratorModal({
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadResponse = await fetch(`${getApiUrl()}/uploads`, {
+      const uploadResponse = await fetch(`${getApiUrl()}/api/uploads`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
@@ -96,7 +96,7 @@ export function QuestionnaireGeneratorModal({
 
       if (file.type === 'application/pdf' || file.type.includes('image')) {
         const ocrResponse = await fetch(
-          `${getApiUrl()}/ocr/${uploadId}/process`,
+          `${getApiUrl()}/api/ocr/${uploadId}/process`,
           {
             method: 'POST',
             headers: {
@@ -128,7 +128,7 @@ export function QuestionnaireGeneratorModal({
             console.log(`OCR check attempt ${retries + 1}/${maxRetries}, checking endpoint: /api/ocr/${uploadIdForCheck}`);
             
             const resultResponse = await fetch(
-              `${getApiUrl()}/ocr/${uploadIdForCheck}`,
+              `${getApiUrl()}/api/ocr/${uploadIdForCheck}`,
               {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
               }
@@ -177,7 +177,7 @@ export function QuestionnaireGeneratorModal({
         }
       } else if (file.type.includes('audio')) {
         const audioResponse = await fetch(
-          `${getApiUrl()}/audio/${uploadId}/process`,
+          `${getApiUrl()}/api/audio/${uploadId}/process`,
           {
             method: 'POST',
             headers: {
@@ -209,7 +209,7 @@ export function QuestionnaireGeneratorModal({
             console.log(`Audio check attempt ${retries + 1}/${maxRetries}, checking endpoint: /api/audio/${uploadIdForCheck}`);
             
             const resultResponse = await fetch(
-              `${getApiUrl()}/audio/${uploadIdForCheck}`,
+              `${getApiUrl()}/api/audio/${uploadIdForCheck}`,
               {
                 headers: { 'Authorization': `Bearer ${localStorage.getItem('authToken')}` },
               }
@@ -275,7 +275,7 @@ export function QuestionnaireGeneratorModal({
         throw new Error('No valid text to generate questionnaire from');
       }
 
-      const response = await fetch(`${getApiUrl()}/processing/questionnaire`, {
+      const response = await fetch(`${getApiUrl()}/api/processing/questionnaire`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -362,7 +362,7 @@ export function QuestionnaireGeneratorModal({
     setLoading(true);
     try {
       const token = localStorage.getItem('authToken');
-      const response = await fetch(`${getApiUrl()}/questionnaires`, {
+      const response = await fetch(`${getApiUrl()}/api/questionnaires`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -739,8 +739,8 @@ export function QuestionnaireGeneratorModal({
                   if (isAudio) {
                     // Para audios, obtener el resultado directamente desde /api/audio/{uploadId}
                     const token = localStorage.getItem('authToken');
-                    console.log('Fetching audio from:', `${getApiUrl()}/audio/${file.id}`);
-                    const response = await fetch(`${getApiUrl()}/audio/${file.id}`, {
+                    console.log('Fetching audio from:', `${getApiUrl()}/api/audio/${file.id}`);
+                    const response = await fetch(`${getApiUrl()}/api/audio/${file.id}`, {
                       headers: {
                         'Authorization': `Bearer ${token}`,
                       }
@@ -758,8 +758,8 @@ export function QuestionnaireGeneratorModal({
                   } else {
                     // Para PDFs e imágenes, obtener el resultado de OCR
                     const token = localStorage.getItem('authToken');
-                    console.log('Fetching OCR from:', `${getApiUrl()}/ocr/${file.id}`);
-                    const response = await fetch(`${getApiUrl()}/ocr/${file.id}`, {
+                    console.log('Fetching OCR from:', `${getApiUrl()}/api/ocr/${file.id}`);
+                    const response = await fetch(`${getApiUrl()}/api/ocr/${file.id}`, {
                       headers: {
                         'Authorization': `Bearer ${token}`,
                       }

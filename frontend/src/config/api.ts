@@ -30,11 +30,15 @@ export const getApiUrl = (): string => {
   const isProduction = import.meta.env.PROD;
   
   if (isProduction) {
-    return `${window.location.protocol}//${window.location.host}/api`;
+    return `${window.location.protocol}//${window.location.host}`;
   }
   
   const envUrl = import.meta.env.VITE_API_URL;
-  return envUrl || 'http://localhost:3001/api';
+  // Si VITE_API_URL ya incluye /api, quitarlo para consistencia
+  if (envUrl?.endsWith('/api')) {
+    return envUrl.slice(0, -4);
+  }
+  return envUrl || 'http://localhost:3001';
 };
 
 // Configuración consolidada

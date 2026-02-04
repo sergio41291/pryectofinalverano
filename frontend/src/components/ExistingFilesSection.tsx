@@ -68,7 +68,7 @@ export function ExistingFilesSection({ onSelectFile, isLoading = false }: Existi
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`${getApiUrl()}/uploads`, {
+      const response = await fetch(`${getApiUrl()}/api/uploads`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
