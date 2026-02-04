@@ -165,12 +165,12 @@ export class OcrProcessor {
             const upload = await this.uploadsService.findById(uploadId);
             if (upload) {
               await this.aiService.saveSummary(userId, {
-                title: upload.originalFilename?.replace(/\.[^/.]+$/, '') || `Resumen ${new Date().toISOString().slice(0, 10)}`,
+                title: upload.originalFileName?.replace(/\.[^/.]+$/, '') || `Resumen ${new Date().toISOString().slice(0, 10)}`,
                 sourceText: result.text || result.full_text || '',
                 summaryContent: fullSummary,
                 language: language || 'es',
                 style: 'bullet-points',
-                sourceFileName: upload.originalFilename,
+                sourceFileName: upload.originalFileName,
               });
               this.logger.log(`Summary saved to summaries table for upload ${uploadId}`);
             }
