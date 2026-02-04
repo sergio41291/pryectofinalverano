@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Copy, Download, Loader } from 'lucide-react';
 import { aiService } from '../services/aiService';
+import { getApiUrl } from '../config/api';
 
 interface AudioSummaryModalProps {
   isOpen: boolean;

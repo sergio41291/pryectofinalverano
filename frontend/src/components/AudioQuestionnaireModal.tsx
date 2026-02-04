@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Loader, CheckCircle, XCircle } from 'lucide-react';
+import { getApiUrl } from '../config/api';
 
 interface Question {
   id: string;
