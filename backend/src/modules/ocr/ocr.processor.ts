@@ -162,7 +162,7 @@ export class OcrProcessor {
 
           // Guardar resumen en la tabla summaries para que aparezca en "Mis Resúmenes"
           try {
-            const upload = await this.uploadsService.findOne(uploadId);
+            const upload = await this.uploadsService.findById(uploadId);
             if (upload) {
               await this.aiService.saveSummary(userId, {
                 title: upload.originalFilename?.replace(/\.[^/.]+$/, '') || `Resumen ${new Date().toISOString().slice(0, 10)}`,
