@@ -160,6 +160,24 @@ export class OcrProcessor {
             this.logger.error(`Failed to save summary to MinIO: ${summaryError?.message}`);
           }
 
+          // Guardar resumen en la tabla summaries para que aparezca en "Mis Resúmenes"
+          try {
+            const upload = await this.uploadsService.findOne(uploadId);
+            if (upload) {
+              await this.aiService.saveSummary(userId, {
+                title: upload.originalFilename?.replace(/\.[^/.]+$/, '') || `Resumen ${new Date().toISOString().slice(0, 10)}`,
+                sourceText: result.text || result.full_text || '',
+                summaryContent: fullSummary,
+                language: language || 'es',
+                style: 'bullet-points',
+                sourceFileName: upload.originalFilename,
+              });
+              this.logger.log(`Summary saved to summaries table for upload ${uploadId}`);
+            }
+          } catch (saveError: any) {
+            this.logger.error(`Failed to save summary to summaries table: ${saveError?.message}`);
+          }
+
           // Notificar final
           this.websocketGateway.notifyOcrCompletedWithSummary(userId, uploadId, ocrResult, fullSummary);
         } catch (summaryError: any) {
