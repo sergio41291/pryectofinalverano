@@ -173,6 +173,10 @@ export class OcrProcessor {
                 sourceFileName: upload.originalFileName,
               });
               this.logger.log(`Summary saved to summaries table for upload ${uploadId}`);
+              
+              // Actualizar el status del upload a 'completed'
+              await this.uploadsService.updateStatus(uploadId, 'completed');
+              this.logger.log(`Upload status updated to 'completed' for upload ${uploadId}`);
             }
           } catch (saveError: any) {
             this.logger.error(`Failed to save summary to summaries table: ${saveError?.message}`);
