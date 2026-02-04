@@ -105,7 +105,17 @@ nano /home/sw1/pryectofinalverano/backend/credentials/google-cloud-key.json
 
 Pegar el JSON completo de tu service account de Google Cloud.
 
-### 6. Ejecutar Deployment
+### 6. Configurar Frontend para Producción
+
+```bash
+cd frontend
+cp .env.production .env
+cd ..
+```
+
+**IMPORTANTE:** El frontend debe usar las URLs de producción, no localhost.
+
+### 7. Ejecutar Deployment
 
 ```bash
 cd /home/sw1/pryectofinalverano
@@ -120,15 +130,38 @@ El script automáticamente:
 4. ✅ Inicia servicios Docker (Postgres, MongoDB, Redis, MinIO, Nginx)
 5. ✅ Instala dependencias del backend (si no existen)
 6. ✅ Compila el backend (`npm run build`)
-7. ✅ Ejecuta migraciones de base de datos
+7. ✅ Ejecuta migraciones de base de datos **← Esto crea todas las tablas**
 8. ✅ Instala dependencias del frontend (si no existen)
 9. ✅ Compila el frontend (`npm run build`)
 10. ✅ Configura entorno Python para OCR
-11. ✅ Inicia todo con PM2 (backend, frontend, OCR)
+11. ✅ Inicia todo con PM2 (backend, OCR)
 12. ✅ Guarda configuración PM2
 13. ✅ Muestra estado y URLs
 
 **Tiempo estimado:** 10-15 minutos (primera vez), 2-3 minutos (subsecuentes)
+
+### 8. Inicializar Base de Datos (Primera vez)
+
+Si es el primer deployment, verifica que las tablas se crearon:
+
+```bash
+# Conectar a PostgreSQL
+docker exec -it learnmind-postgres psql -U learnmind_user -d learnmind_production
+
+# Listar tablas
+\dt
+
+# Debes ver 17 tablas
+# Salir
+\q
+```
+
+Si las tablas NO existen, ejecuta las migraciones manualmente:
+
+```bash
+cd backend
+npm run migration:run
+```
 
 ---
 
